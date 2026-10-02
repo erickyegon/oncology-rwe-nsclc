@@ -1,6 +1,6 @@
 # Data dictionary: `mart_nsclc_cohort`
 
-The analysis cohort table built by dbt (`dbt/models/marts/mart_nsclc_cohort.sql`, schema `dbt` in the `omop` database). One row per person: staged non-small cell lung cancer (NSCLC), age at diagnosis 50 or older, all diagnosis years, follow-up censored at 120 months. 1,347 rows. All data are synthetic (Synthea); the OMOP tables are loaded by `etl/02_etl_synthea.R`.
+The analysis cohort table built by dbt (`dbt/models/marts/mart_nsclc_cohort.sql`, schema `dbt` in the `omop` database). One row per person: staged non-small cell lung cancer (NSCLC), age at diagnosis 50 or older, all diagnosis years, follow-up censored at 120 months. 1,347 rows, 13 columns. All data are synthetic (Synthea); the OMOP tables are loaded by `etl/02_etl_synthea.R`.
 
 ## Columns
 
@@ -16,6 +16,9 @@ The analysis cohort table built by dbt (`dbt/models/marts/mart_nsclc_cohort.sql`
 | `event` | integer (0/1) | 1 if the person died within 120 months of the index date, else 0 (censored). | `death.death_date` | `death_date is not null and uncapped follow-up <= 120`. 1,291 events. | 0 (0%) |
 | `censored_at_120` | boolean | True if follow-up was truncated at the 120-month cap. | derived | `uncapped follow-up > 120 months`. All false in this data: no person has more than 72 months of follow-up. | 0 (0%) |
 | `dx_2010_2015` | boolean | Flag for the sensitivity cohort: diagnosed in 2010 to 2015. | derived from `index_date` | `extract(year from index_date) between 2010 and 2015`. 305 true. | 0 (0%) |
+| `prior_other_cancer` | boolean | Flag: another cancer or its treatment is recorded before the NSCLC index date. A flag only; nobody is excluded. | `drug_exposure`, `procedure_occurrence`, `condition_occurrence`, `concept_ancestor` | True if, strictly before `index_date`, the person has an anticancer drug (ATC L01 or L02 ingredient, excluding ethinyl estradiol, mestranol, medroxyprogesterone and epinephrine), a chemotherapy or radiation procedure (SNOMED 703423002, 33195004, 367336001, 394894008), or a non-lung malignancy diagnosis (descendant of SNOMED 443392, excluding the lung cancer source codes) (`int_prior_cancer`). 241 true (199 by drug, 30 by procedure, 73 by diagnosis; overlapping). | 0 (0%) |
+| `ttnt_months` | numeric (3 decimals) | Time to next treatment: months from the start of line 1 to the start of line 2 or death, whichever is first, censored at the end of observation, capped at 120. | `int_lines_of_therapy`, `death.death_date`, `observation_period.observation_period_end_date` | `greatest(coalesce(least(line2_start, death_date), observation_period_end_date) - line1_start, 0) / 30.4375`, capped at `followup_cap_months`. Median 9.4. | 1 of 1,347 (0.1%): the patient with no recorded line 1 |
+| `ttnt_event` | integer (0/1) | 1 if line 2 started or the person died before censoring (within the cap), else 0. | as `ttnt_months` | 1,293 events (47 patients with a line 2, the rest deaths before any line 2), 53 censored. | 1 of 1,347 (0.1%): no line 1 |
 
 ### Histology and stage come from source codes, not standard concepts
 In the Athena vocabulary release v20260829 loaded here, SNOMED `422968005` ("NSCLC, TNM stage 3") maps to two Condition concepts, NSCLC and "Small cell carcinoma of lung". ETL-Synthea writes one `condition_occurrence` row per target concept, so 312 persons carry a spurious small cell concept (see `docs/provenance.md`). The cohort therefore never uses `condition_concept_id`. Histology and stage are taken from `condition_source_value` through the code map `int_lung_cancer_codes`, which a dbt test checks against the SNOMED concept names in `cdm.concept`.
@@ -41,8 +44,11 @@ A person is NSCLC if they have at least one NSCLC code and no SCLC code. No pers
 - Follow-up capped at `followup_cap_months` (120); `days_per_month` 30.4375, `days_per_year` 365.25.
 - Sensitivity cohort: `dx_2010_2015`, years `sensitivity_start_year` to `sensitivity_end_year`.
 
+### Lines of therapy (`int_lines_of_therapy`)
+One row per person and line, built from administrations of the NSCLC-directed drugs (cisplatin, paclitaxel) on or after the index date. Rules: [analysis decisions](docs/analysis_decisions.md). Columns: `person_id`; `line_number` (1, 2, ...); `line_start_date`; `line_end_date`; `n_administration_dates`; `gap_before_days` (days since the previous administration, null for line 1); `regimen` (drugs started within `line_window_days` of the line start, for example `cisplatin + paclitaxel`). Thresholds are dbt variables `line_gap_days` (90) and `line_window_days` (28). 1,394 lines for the 1,346 treated main-cohort patients (1,299 with one line, 46 with two, 1 with three).
+
 ### Data-quality tests on this table (dbt)
-`unique` and `not_null` on `person_id`; `not_null` on every other column; `accepted_values` for `sex` (M, F), `stage` (I to IV) and `event` (0, 1); follow-up between 0 and 120; death date not before the index date; no small cell source code among the cohort's persons; `event`, `death_date` and `censored_at_120` consistent with each other; every person with source code `422968005` classified NSCLC stage III; the code map agrees with the vocabulary.
+`unique` and `not_null` on `person_id`; `not_null` on every other column; `accepted_values` for `sex` (M, F), `stage` (I to IV) and `event` (0, 1); follow-up between 0 and 120; death date not before the index date; no small cell source code among the cohort's persons; `event`, `death_date` and `censored_at_120` consistent with each other; every person with source code `422968005` classified NSCLC stage III; the code map agrees with the vocabulary. Lines of therapy: at most one line 1 per person, no line starts before diagnosis, line numbers consecutive; time to next treatment consistent with follow-up, the 120-month cap and with having a line 1.
 
 ## `mart_cohort_attrition`
 

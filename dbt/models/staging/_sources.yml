@@ -10,3 +10,6 @@ sources:
       - name: death
       - name: observation_period
       - name: concept
+      - name: drug_exposure
+      - name: procedure_occurrence
+      - name: concept_ancestor

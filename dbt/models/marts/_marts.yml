@@ -40,5 +40,21 @@ models:
       - name: dx_2010_2015
         description: Flag for the sensitivity cohort (diagnosed 2010-2015).
         data_tests: [not_null]
+      - name: prior_other_cancer
+        description: >
+          True if, before the lung cancer index date, the person had an anticancer drug, a chemotherapy or radiation
+          procedure, or a non-lung malignancy diagnosis. A flag only; nobody is excluded.
+        data_tests: [not_null]
+      - name: ttnt_months
+        description: >
+          Months from the start of line 1 to the start of line 2 or death, censored at the end of observation, capped at
+          120. Null only for a person with no recorded line 1.
+      - name: ttnt_event
+        description: 1 if line 2 started or the person died before censoring (within the cap), else 0; null if there is no line 1.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
   - name: mart_cohort_attrition
     description: Cohort flow table (people remaining after each rule).

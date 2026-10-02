@@ -18,6 +18,16 @@ vars:
   sensitivity_end_year: 2015
   days_per_month: 30.4375
   days_per_year: 365.25
+  # lines of therapy (rules approved 2026-10-02): a gap of more than line_gap_days between consecutive administrations
+  # of an NSCLC-directed drug starts the next line; line_window_days defines the line's starting regimen. A new drug
+  # alone never starts a line. For the 60- and 120-day sensitivity runs: dbt run --vars '{line_gap_days: 60}'
+  line_gap_days: 90
+  line_window_days: 28
+  nsclc_systemic_ingredients: ['cisplatin', 'paclitaxel']      # NSCLC-directed agents in the Synthea module
+  # anticancer = ATC L01 or L02 ingredient, except these (contraceptives and hormone therapy; epinephrine carries a stray L01 code)
+  excluded_hormone_ingredients: ['ethinyl estradiol', 'mestranol', 'medroxyprogesterone', 'epinephrine']
+  anticancer_procedure_codes: ['703423002', '33195004', '367336001', '394894008']   # chemoradiation, external beam radiation, chemotherapy, pre-operative chemotherapy (SNOMED)
+  malignant_neoplasm_concept_id: 443392                        # SNOMED 'Malignant neoplastic disease' (ancestor for prior cancer diagnoses)
 
 models:
   oncology_rwe:

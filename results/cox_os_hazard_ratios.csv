@@ -1,0 +1,13 @@
+"model","term","hr","lcl","ucl","p"
+"main","stageII",22.16,14.68,33.44,2.93e-49
+"main","stageIII",289.8,170.1,494,1.93e-96
+"main","stageIV",9488,5056,17810,8.8e-179
+"main","age_at_dx",1.005,0.998,1.011,0.174
+"main","sexM",1.014,0.8863,1.161,0.837
+"main","age_at_dx (per 10 years)",1.046,0.9801,1.117,0.174
+"excluding prior_other_cancer","stageII",24.71,15.53,39.32,9.69e-42
+"excluding prior_other_cancer","stageIII",339.8,186.7,618.4,3.98e-81
+"excluding prior_other_cancer","stageIV",10940,5401,22140,3.06e-147
+"excluding prior_other_cancer","age_at_dx",1.004,0.9966,1.011,0.296
+"excluding prior_other_cancer","sexM",1,0.8675,1.153,0.997
+"excluding prior_other_cancer","age_at_dx (per 10 years)",1.039,0.9669,1.117,0.296

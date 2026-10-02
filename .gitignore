@@ -113,3 +113,6 @@ desktop.ini
 
 # ---- DatabaseConnector error reports
 errorReport*.txt
+
+# ---- Windows shortcuts (they embed local paths)
+*.lnk

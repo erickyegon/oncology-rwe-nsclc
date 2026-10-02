@@ -134,7 +134,7 @@ It does **not** cover third-party data or content:
 - **Synthea** is open source under its own license; the generated synthetic data are not committed (only generation settings and the edited module files). The two edited module files in `synthea/modules/` are derived from Synthea (MITRE) and remain under its Apache 2.0 license; see [`synthea/modules/NOTICE`](synthea/modules/NOTICE).
 
 ## Status
-Kaplan–Meier comparison with SEER complete. Next: SEER age and sex by stage pull, OHDSI Data Quality Dashboard, lines of therapy. See [`PLAN.md`](PLAN.md).
+Lines of therapy, Cox model and RMST complete. Next: Quarto report. See [`PLAN.md`](PLAN.md).
 
 ## Running the code
 Run everything from the repository root.
