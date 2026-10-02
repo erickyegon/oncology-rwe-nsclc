@@ -9,5 +9,9 @@ SEER*Stat, SEER Research Data, 17 Registries, Nov 2025 Sub. NSCLC, diagnosed 201
 
 Superseded: an earlier same-day pull used "first matching record per person" and gave n = 213,428 (I 22.8%, II 8.7%, III 19.4%, IV 49.0%). The first-primary-only definition replaces it because it counts each person once at their first primary cancer.
 
-## Pull 2 (pending): survival by stage
-Survival session for the same NSCLC definition, by stage group, age group and sex, for the benchmark against the synthetic cohort.
+## Pull 2: observed survival by stage (`nsclc_survival_by_stage_summary.csv`)
+SEER*Stat survival session `nsclc_survival_by_stage_2010-2015` (Kaplan-Meier observed survival, 1-month intervals, 120 months, study cutoff 12/2023) for the same NSCLC definition: diagnosed 2010-2015, derived AJCC 7th edition stage group. N at diagnosis: Stage I 32,093; II 13,477; III 31,785; IV 82,903; unknown stage 12,324 (172,582 in all; 160,258 with known stage I-IV).
+
+**What is committed:** only `nsclc_survival_by_stage_summary.csv`: stage (I-IV), months (0, 12, 24, ... 120), observed survival (%), standard error (%) and number still at risk. Month 0 is 100% with the full cohort at risk; at month m the survival and SE are the cumulative values at the end of interval m, and the number at risk is the number alive and under follow-up at month m. **Every count in the file is at least 16** (the smallest is 753).
+
+**What is not committed:** the full SEER*Stat export (`nsclc_survival_by_stage_2010-2015.csv`, `.dic`) and the session and matrix files. The export has monthly died and lost-to-follow-up counts, some of them under 16, which the SEER Research Data Use Agreement does not allow to be published. Those files stay on the local machine and are gitignored.

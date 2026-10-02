@@ -6,7 +6,9 @@
 # Usage: bash etl/02a_load_native_copy.sh <csv_dir>   (a path psql can read, e.g. a Windows-style path or a path relative to the repo root)
 set -e
 DIR=${1:?csv dir}
-cd "$(dirname "$0")/.."; set -a; . ./.Renviron; set +a
+cd "$(dirname "$0")/.."
+# load KEY=VALUE lines from .Renviron safely (values may contain spaces; do not `source` it)
+while IFS='=' read -r k v; do [[ $k =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && export "$k=$v"; done < <(grep -v '^[[:space:]]*#' .Renviron | tr -d '')
 export PGPASSWORD=$PG_PASSWORD
 PSQL_BIN=${PSQL_BIN:-$(command -v psql || echo "/c/Program Files/PostgreSQL/17/bin/psql.exe")}
 PSQL=("$PSQL_BIN" -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1)

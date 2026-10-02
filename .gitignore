@@ -28,6 +28,7 @@ cpt4.jar
 seer/*
 !seer/README.md
 !seer/nsclc_stage_mix_2010-2015.csv
+!seer/nsclc_survival_by_stage_summary.csv
 *.ssm
 *.sfm
 *.sas.sf
@@ -109,3 +110,6 @@ desktop.ini
 ~$*
 .idea/
 .vscode/
+
+# ---- DatabaseConnector error reports
+errorReport*.txt

@@ -2,7 +2,9 @@
 # Fast vocabulary load with psql \copy (streams files; R-based loader is too memory-hungry).
 # Usage (any directory): bash etl/01b_load_vocab_copy.sh [vocab_dir]   (default: $VOCAB_DIR from .Renviron, else ./vocab)
 set -e
-cd "$(dirname "$0")/.."; set -a; . ./.Renviron; set +a
+cd "$(dirname "$0")/.."
+# load KEY=VALUE lines from .Renviron safely (values may contain spaces; do not `source` it)
+while IFS='=' read -r k v; do [[ $k =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && export "$k=$v"; done < <(grep -v '^[[:space:]]*#' .Renviron | tr -d '')
 export PGPASSWORD=$PG_PASSWORD
 VOC=${1:-${VOCAB_DIR:-vocab}}
 PSQL_BIN=${PSQL_BIN:-$(command -v psql || echo "/c/Program Files/PostgreSQL/17/bin/psql.exe")}
