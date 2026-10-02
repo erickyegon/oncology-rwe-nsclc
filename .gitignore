@@ -118,3 +118,4 @@ errorReport*.txt
 # ---- Windows shortcuts (they embed local paths)
 *.lnk
 report/_tmp/
+report/one_page_summary.pdf
