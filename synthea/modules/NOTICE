@@ -1,0 +1,23 @@
+NOTICE: modified Synthea modules
+
+lung_cancer.json and veteran_lung_cancer.json in this directory are modified copies of modules distributed
+with Synthea(TM), developed by The MITRE Corporation (https://github.com/synthetichealth/synthea).
+
+Synthea is licensed under the Apache License, Version 2.0:
+https://github.com/synthetichealth/synthea/blob/master/LICENSE (SPDX: Apache-2.0).
+A copy of the licence text, taken from Synthea's own LICENSE file, is in LICENSE-APACHE in this directory.
+These two files remain under that licence. The MIT licence in the repository root does not apply to them.
+
+Upstream source: modules/lung_cancer.json and modules/veteran_lung_cancer.json from synthea-with-dependencies.jar,
+release "master-branch-latest" (build version d9d07a6, built 2026-08-18).
+
+Changes made (2026-10-01):
+
+1. In both files, the state "Schedule Follow Up III": the conditional_transition that assigned Stage I, II, III or IV
+   from the attribute lung_cancer_nondiagnosis_counter (<= 36, <= 72, <= 108 months, otherwise IV) was replaced by a
+   distributed_transition with Stage I 0.2002, Stage II 0.0841, Stage III 0.1982 and Stage IV 0.5175. These are the
+   SEER 17 non-small cell lung cancer stage-at-diagnosis shares (20.0, 8.4, 19.8 and 51.7 percent; diagnosed
+   2010-2015, age 50+, first primary, known stage), scaled proportionally to sum to 1. Remarks explaining the change
+   and its source were added to that state. See docs/synthea-stage-patch.md in this repository for the reason.
+2. The files were re-serialized as JSON by a script, so whitespace and formatting differ from upstream beyond the
+   change above. No other state was edited.

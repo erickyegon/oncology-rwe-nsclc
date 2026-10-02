@@ -120,19 +120,35 @@ Notes:
 
 Further ETL notes (the stage III small-cell vocabulary mapping, the skipped `drug_era` step, the extra-index timing test and the OMOP verification results) are in [`docs/provenance.md`](docs/provenance.md).
 
+More detail: [the stage-assignment investigation](docs/synthea-stage-patch.md) and [cohort and data notes](docs/data-notes.md).
+
+## Use of AI tools
+I used AI assistants (Claude) as tools in this project: to write and debug code, run checks, and draft documentation. The research question, study design, cohort and NSCLC definitions, SEER extraction, methodological choices and interpretation of the results are my own. I reviewed every output, verified results against their sources (including the SEER*Stat exports and the OMOP source data), and I am responsible for all content in this repository. Commits made with AI assistance carry `Co-Authored-By` trailers.
+
 ## License and data terms
-The **MIT License** (see [LICENSE](LICENSE)) covers **the code in this repository only**: the scripts, SQL/dbt models, R code, Synthea module edits and documentation I wrote.
+The **MIT License** (see [LICENSE](LICENSE)) covers **the code in this repository only**: the scripts, SQL/dbt models, R code and documentation I wrote.
 
 It does **not** cover third-party data or content:
 - **SEER data** are used under the SEER Research Data Use Agreement. No SEER record-level data are in this repository; only the small set of aggregate results listed in [`seer/`](seer/) is included, and SEER data cannot be redistributed.
 - **OMOP standardized vocabularies** (downloaded from Athena) remain under their own terms and the licences of each source vocabulary (for example SNOMED CT, RxNorm, LOINC, CVX, ICDO3). They are not included here and are not redistributed.
-- **Synthea** is open source under its own license; the generated synthetic data are not committed (only generation settings and the edited module files).
+- **Synthea** is open source under its own license; the generated synthetic data are not committed (only generation settings and the edited module files). The two edited module files in `synthea/modules/` are derived from Synthea (MITRE) and remain under its Apache 2.0 license; see [`synthea/modules/NOTICE`](synthea/modules/NOTICE).
 
 ## Status
-Kaplan–Meier comparison with SEER complete. Next: SEER age and sex by stage pull, OHDSI Data Quality Dashboard, lines of therapy.
+Kaplan–Meier comparison with SEER complete. Next: SEER age and sex by stage pull, OHDSI Data Quality Dashboard, lines of therapy. See [`PLAN.md`](PLAN.md).
 
 ## Running the code
 Run everything from the repository root.
+
+**Prerequisites**
+- Java 17+ (JDK) and the Synthea jar, `synthea-with-dependencies.jar`, from the [Synthea releases](https://github.com/synthetichealth/synthea/releases) (this project used the `master-branch-latest` build of 2026-08-18)
+- PostgreSQL 17
+- R (4.6.1 was used) with DatabaseConnector, SqlRender, ETLSyntheaBuilder (`remotes::install_github("OHDSI/ETL-Synthea")`), DBI, RPostgres, survival, dplyr, tidyr, readr and ggplot2
+- Python 3 (standard library only) for the scripts in `tools/`
+- dbt-postgres (dbt-core 1.12.5 was used)
+- An [Athena](https://athena.ohdsi.org) account and a vocabulary download with SNOMED, RxNorm, LOINC, CVX, ICDO3 and Cancer Modifier plus the Athena defaults (CPT4 excluded)
+- To regenerate the SEER benchmark inputs only: SEER Research Data access and SEER*Stat (Windows only). The aggregate results committed in `seer/` are enough to run the comparison without it.
+
+**Steps**
 1. Copy [`.Renviron.example`](.Renviron.example) to `.Renviron` (gitignored) and set the PostgreSQL connection, a JDK 17+ `JAVA_HOME`, and the vocabulary/Synthea paths.
 2. Create the database and role: `etl/setup_postgres.ps1`.
 3. Generate the synthetic data: `synthea/run_generate.ps1`.
@@ -141,5 +157,6 @@ Run everything from the repository root.
 6. Load the Synthea CSVs: `etl/02a_load_native_copy.sh <dir>`.
 7. Map to OMOP CDM 5.4: `Rscript etl/02_etl_synthea.R`.
 8. Check the cohort: `tools/cohort_summary.py <dir>`.
-
-Further stages (dbt, analysis, report) are still to come.
+9. Create the dbt profile: copy `dbt/profiles.example.yml` to `dbt/profiles.yml` (gitignored). It reads the `PG_*` values from the environment, so load them from `.Renviron` into your shell first.
+10. Build and test the cohort models: `dbt build --project-dir dbt --profiles-dir dbt`.
+11. Compare with SEER: `Rscript analysis/km_synthea_vs_seer.R` (writes `results/` and `figures/`).

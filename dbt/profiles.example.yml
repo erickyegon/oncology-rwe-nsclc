@@ -1,0 +1,15 @@
+# Template for dbt/profiles.yml (which is gitignored). Copy it to dbt/profiles.yml; no edits are needed.
+# Credentials are read from environment variables at run time, so the PG_* values from your .Renviron
+# (see .Renviron.example) must be set in the shell that runs dbt. Nothing real is stored here.
+oncology_rwe:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('PG_HOST') }}"
+      port: "{{ env_var('PG_PORT') | as_number }}"
+      dbname: "{{ env_var('PG_DB') }}"
+      user: "{{ env_var('PG_USER') }}"
+      password: "{{ env_var('PG_PASSWORD') }}"
+      schema: dbt
+      threads: 4
