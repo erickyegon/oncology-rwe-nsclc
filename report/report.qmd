@@ -1,0 +1,298 @@
+---
+title: "How realistic is synthetic oncology EHR data?"
+subtitle: "NSCLC survival from Synthea, harmonized to OMOP and benchmarked against SEER"
+author: "Erick Kiprotich Yegon (linkedin.com/in/erickyegon)"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+    embed-resources: true
+    fig-align: center
+    css: report.css
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(dplyr); library(tidyr); library(readr); library(knitr); library(jsonlite)
+root <- ".."                                   # repository root, relative to report/
+rd <- function(f) read_csv(file.path(root, f), show_col_types = FALSE)
+f1 <- function(x, d = 1) formatC(x, format = "f", digits = d, big.mark = ",")
+n0 <- function(x) format(round(x), big.mark = ",", trim = TRUE)
+STAGES <- c("I", "II", "III", "IV")
+repo_url <- "https://github.com/erickyegon/oncology-rwe-nsclc"
+medium_url <- "https://medium.com/@keyegon/from-seer-stat-to-r-a-practical-guide-to-extracting-and-validating-cancer-survival-data-2601dd584b88"
+tab <- function(x, caption = NULL, ...) kable(x, caption = caption, align = "l", ...)
+
+# ---- results files (all committed) ----
+km      <- rd("results/km_synthea_vs_seer.csv")
+med     <- rd("results/km_median_survival_by_stage.csv")
+rmst    <- rd("results/rmst_synthea_vs_seer.csv")
+hr      <- rd("results/cox_os_hazard_ratios.csv")
+ph      <- rd("results/cox_os_ph_tests.csv")
+dem     <- rd("results/demographics_synthea_vs_seer.csv")
+rw      <- rd("results/km_synthea_vs_seer_reweighted.csv")
+fu      <- rd("results/km_followup_by_stage.csv")
+attr    <- rd("results/mart_cohort_attrition.csv")
+omop    <- rd("results/omop_table_counts.csv")
+kv      <- rd("results/report_inputs.csv"); kvv <- setNames(kv$value, kv$key)
+tr1     <- rd("results/treatment_first_line_by_stage.csv")
+trs     <- rd("results/treatment_patterns_summary.csv"); t_ <- setNames(trs$value, trs$measure)
+lg      <- rd("results/lines_of_therapy_by_gap.csv")
+dqs     <- rd("results/dqd_summary.csv"); dqf <- rd("results/dqd_failures.csv"); dqc <- rd("results/dqd_cohort_tables.csv")
+# ---- SEER aggregates (committed) ----
+seer_surv <- rd("seer/nsclc_survival_by_stage_summary.csv")
+seer_mix  <- rd("seer/nsclc_stage_mix_2010-2015.csv")
+seer_as   <- rd("seer/nsclc_age_sex_by_stage_summary.csv")
+seer_all  <- sum(seer_as$n[seer_as$age_band == "All 50+" & seer_as$sex == "both"])
+seer_known <- sum(seer_as$n[seer_as$age_band == "All 50+" & seer_as$sex == "both" & seer_as$stage %in% STAGES])
+# ---- Synthea settings and the stage patch, read from the repository ----
+gen <- readLines(file.path(root, "synthea/run_generate.ps1"))
+gv <- function(pat) sub(pat, "\\1", grep(pat, gen, value = TRUE)[1])
+syn_seed <- gv(".*\\[int\\]\\$Seed = ([0-9]+).*"); syn_pop <- gv(".*\\[int\\]\\$Population = ([0-9]+).*")
+syn_ref <- gv(".*\\$ReferenceDate = '([0-9]+)'.*"); syn_cs <- gv(".*\\[int\\]\\$ClinicianSeed = ([0-9]+).*")
+mod <- fromJSON(file.path(root, "synthea/modules/lung_cancer.json"), simplifyVector = FALSE)$states
+dist <- mod[["Schedule Follow Up III"]]$distributed_transition
+patch <- tibble(stage = sub("Stage ", "", sapply(dist, `[[`, "transition")), share = sapply(dist, `[[`, "distribution") * 100)
+win <- sapply(c("Stage I", "Stage II", "Stage III", "Stage IV"), function(s) { r <- mod[[s]]$range; sprintf("%s-%s %s", r$low, r$high, r$unit) })
+readme <- readLines(file.path(root, "README.md"))
+prov <- readLines(file.path(root, "docs/provenance.md"))
+vocab_release <- regmatches(prov, regexpr("v2026[0-9]{4}", prov))[1]
+sv_line <- grep("synthea_version <-", readLines(file.path(root, "etl/00_connect.R")), value = TRUE)[1]
+syn_tables <- regmatches(sv_line, regexpr("[0-9]+[.][0-9]+[.][0-9]+", sv_line))
+rec <- regmatches(readme, regexec("\\(([0-9,]+) records: ([0-9,]+) alive, ([0-9,]+) dead", readme)); rec <- rec[lengths(rec) > 0][[1]]
+parse_run <- function(f) {                       # stage mix and chi-square p from the committed run summaries
+  x <- readLines(file.path(root, f)); i <- grep("^=== 1\\. Stage mix", x)[1]
+  rows <- regmatches(x[(i + 1):(i + 14)], regexec("^\\s+([1-4])\\s+([0-9]+)\\s+([0-9.]+)%", x[(i + 1):(i + 14)])); rows <- rows[lengths(rows) > 0][1:4]   # the four stage rows of the first block
+  list(n = sapply(rows, function(r) as.integer(r[3])), pct = sapply(rows, function(r) as.numeric(r[4])))
+}
+run1 <- parse_run("synthea/evidence/run1_summary.txt"); run2 <- parse_run("synthea/evidence/run2_summary.txt")
+p_age50 <- as.numeric(sub(".*p = ([0-9.]+).*", "\\1", grep("chi-square vs input", readLines(file.path(root, "synthea/evidence/run2_summary.txt")), value = TRUE)[2]))
+
+# ---- convenient slices ----
+kmm <- filter(km, cohort == "main"); medm <- filter(med, cohort == "main"); rm_ <- filter(rmst, cohort == "main")
+g <- function(d, st, col) d[[col]][d$stage == st]
+yr5 <- function(st) kmm$seer_S_pct[kmm$stage == st & kmm$year == 5]
+rw5 <- rw |> filter(year == 5)
+rw4 <- function(st, col) rw5[[col]][rw5$weighting == "4 age bands" & rw5$stage == st]
+rw3 <- function(st, col) rw5[[col]][rw5$weighting == "3 age bands (75+ merged)" & rw5$stage == st]
+hrm <- function(term, col) hr[[col]][hr$model == "main" & hr$term == term]
+pfm <- function(p) { s <- format.pval(p, digits = 2, eps = 1e-16); ifelse(startsWith(s, "<"), paste("<", sub("^<", "", s)), paste("=", s)) }
+phv <- function(level, name) ph$p[ph$model == "main" & ph$level == level & ph$name == name]
+fu_max <- max(fu$max_followup_months[fu$cohort == "main" & fu$stage != "I"])
+med_ratio <- function(st) sprintf("%.1f vs %.0f", g(medm, st, "synthea_median_months"), g(medm, st, "seer_median_months"))
+if (!is.na(medium_url)) medium_txt <- sprintf("[Medium article](%s)", medium_url) else medium_txt <- "Medium article (link to be added when published)"
+```
+
+# Summary
+
+This project built an end-to-end workflow (Synthea → OMOP CDM 5.4 → dbt → R) on a synthetic NSCLC cohort of `r n0(attr$n_persons[attr$step_order == 8])` patients and benchmarked its survival against `r n0(seer_all)` real U.S. patients from SEER (`r n0(seer_known)` with known stage). Unmodified Synthea staged every lung cancer as stage I, and even after patching that module a second, hidden path (the veteran module) still produced `r f1(run1$pct[1])`% stage I, so both had to be fixed before any comparison was possible; the stage mix now matches SEER (chi-square p = `r f1(p_age50, 2)` for age 50 and over). Synthea ranks the stages correctly, and some single summaries look close to SEER, such as the stage III median (`r med_ratio("III")` months) and the stage I restricted mean survival time (`r f1(g(rm_, "I", "synthea_rmst_months"))` vs `r f1(g(rm_, "I", "seer_rmst_months"))` months), yet the curves do not match: nobody with stage II–IV disease is followed beyond `r ceiling(fu_max)` months, whereas SEER five-year survival is `r f1(yr5("II"), 0)`%, `r f1(yr5("III"), 0)`% and `r f1(yr5("IV"), 0)`% for stages II, III and IV. Age and sex have no effect on survival in Synthea (hazard ratio `r f1(hrm("age_at_dx (per 10 years)", "hr"), 2)` per 10 years and `r f1(hrm("sexM", "hr"), 2)` for men), reweighting to SEER's age and sex distribution leaves the curves essentially unchanged, and `r n0(t_[["first_line_modal_type_n"]])` of `r n0(t_[["main_cohort_n"]])` patients received the same treatment, so treatment effects cannot be identified. Synthetic data can test a pipeline but not stand in for real-world outcomes, and the lesson is to validate full distributions, not summary statistics.
+
+# Background and question
+
+Real-world evidence (RWE) in oncology depends on patient-level electronic health record (EHR) data that is expensive and rarely open. Synthetic data generators such as Synthea offer a free alternative for developing and testing analysis pipelines. This project asks: **how realistic is synthetic oncology EHR data for RWE?** Specifically, if the same workflow that would be applied to a real EHR dataset is applied to a synthetic non-small cell lung cancer (NSCLC) cohort (harmonization to the OMOP Common Data Model, cohort building, survival analysis), how closely do the results agree with a population benchmark, the SEER cancer registry?
+
+The original study design also asked how overall survival differs by stage at diagnosis and by first-line treatment. The treatment half turned out not to be answerable in this data (@sec-iptw); the report therefore focuses on survival by stage and on the benchmark.
+
+All data are synthetic or public aggregates. This is a methods demonstration, **not** clinical evidence, and it does not use Flatiron or any real patient-level data.
+
+# Data
+
+## Synthea generation and the stage patch
+
+Patients were generated with Synthea (`master-branch-latest` build, 2026-08-18) with these settings from `synthea/run_generate.ps1`: population `r n0(as.numeric(syn_pop))` living patients aged 50–90, patient seed `r syn_seed`, clinician seed `r syn_cs`, reference date `r syn_ref`, Massachusetts, CSV export only (claims and imaging excluded for size). The run produced `r rec[2]` records (`r rec[3]` alive, `r rec[4]` dead); `r n0(as.numeric(kvv[["persons_in_cdm"]]))` had a lung cancer diagnosis and were kept for the OMOP load (`tools/filter_lung_cancer.py`).
+
+**The stage bug.** In an unmodified run every lung cancer was stage I, because the module assigns stage from a counter of undiagnosed months that almost never exceeds its first threshold. Patching that one state in `lung_cancer.json` was not enough: Synthea also runs `veteran_lung_cancer.json` for patients with the veteran attribute, with its own copy of the rule. After the first 60,000-patient run only the patched module was in place and the stage mix was still wrong; patching both modules fixed it.
+
+```{r stage-mix}
+mix <- tibble(Stage = STAGES,
+  `SEER stage mix (known stage), %` = seer_mix$seer_share_pct[match(STAGES, seer_mix$stage_group)],
+  `Share written into both modules, %` = round(patch$share[match(STAGES, patch$stage)], 2),
+  `First run (veteran module unpatched), %` = run1$pct,
+  `Analysis run (both patched), %` = run2$pct)
+tab(mix, caption = sprintf("Stage mix of staged NSCLC patients (all ages): the SEER input, the shares used in the patched modules, and the Synthea runs before and after patching the second module. SEER n = %s with known stage.", n0(seer_mix$n_known_stage[1])))
+```
+
+The module scripts each stage's death inside a time window after diagnosis (`r paste(names(win), win, sep = ": ", collapse = "; ")`). This matters for the results below.
+
+## ETL-Synthea load into OMOP CDM 5.4
+
+The Synthea CSVs were loaded into PostgreSQL 17 and mapped to OMOP CDM 5.4 with ETL-Synthea (Synthea table version `r syn_tables`), using the Athena vocabulary release **`r vocab_release`** (vocabulary version string `r kvv[["vocabulary_version"]]`) (SNOMED, RxNorm, LOINC, CVX, ICDO3, Cancer Modifier and the Athena defaults). Two compatibility fixes were needed (a new `NPI` column in the current Synthea export, and ETL-Synthea's loader reading ZIP codes as integers), and the OHDSI `drug_era` step was skipped because it did not finish in over an hour; lines of therapy use `drug_exposure` instead. The load was verified against the source files: persons, deaths, lung cancer conditions and the NSCLC and stage counts all match.
+
+```{r omop-counts}
+tab(omop |> mutate(rows = n0(rows)) |> rename(`OMOP table` = table, Rows = rows), caption = "Rows loaded into the OMOP CDM (lung cancer patients only).")
+```
+
+## The stage III vocabulary mapping finding
+
+In this vocabulary release the SNOMED code for "non-small cell carcinoma of lung, TNM stage 3" maps to two condition concepts: non-small cell lung cancer and **small cell carcinoma of lung**. ETL-Synthea writes one condition row per concept, so each of the `r kvv[["stage3_code_persons"]]` stage III patients has `r as.integer(kvv[["stage3_code_rows"]]) / as.integer(kvv[["stage3_code_persons"]])` rows, one of them small cell. As a result `r kvv[["persons_with_small_cell_concept"]]` persons carry the small cell concept: `r kvv[["true_small_cell_persons"]]` true small cell patients plus the `r kvv[["stage3_code_persons"]]` stage III NSCLC patients. A cohort defined by standard concepts would silently misclassify them. Here histology and stage are therefore taken from the **source codes**, not the standard concepts, and a dbt test guards the rule. The standard OHDSI Data Quality Dashboard did not flag this problem (@sec-dqd).
+
+## SEER benchmark
+
+The benchmark is SEER Research Data, 17 Registries, November 2025 submission (diagnosis years 2000–2023, released April 2026), extracted with SEER*Stat: lung and bronchus, NSCLC defined by excluding ICD-O-3 histology 8041–8045 (small cell) and 8240–8249 (carcinoid and other neuroendocrine), diagnosed 2010–2015, age 50 and over, first primary only, AJCC 7th edition derived stage group, observed (all-cause) Kaplan–Meier survival in monthly intervals to December 2023. The survival cohort has `r n0(seer_all)` patients, `r n0(seer_known)` with known stage I–IV. Only aggregate results are used and published, in line with the SEER data use agreement.
+
+# Methods
+
+## Cohort rules (dbt)
+
+The cohort is built with dbt models on the OMOP tables (`stg_` → `int_` → `mart_nsclc_cohort`). The **index date** is the first recorded lung cancer diagnosis. NSCLC versus small cell and TNM stage come from SNOMED source codes. The **main cohort** is staged NSCLC, age 50 or older at diagnosis (matching the SEER extraction), all diagnosis years, follow-up censored at 120 months; the **sensitivity cohort** is the same restricted to diagnoses in 2010–2015.
+
+```{r attrition}
+tab(attr |> transmute(Step = step_order, Description = step, Persons = n0(n_persons)), caption = "Cohort flow, from the dbt model mart_cohort_attrition.")
+```
+
+## Endpoints
+
+**Overall survival** runs from the index date to death; survivors are censored at the end of their observation period. **Time to next treatment** runs from the start of line 1 to the start of line 2 or death, censored at the end of observation. A **prior-other-cancer flag** marks patients with another cancer's treatment or diagnosis before the NSCLC index date (flag only, nobody excluded).
+
+## Lines of therapy
+
+Rule-based, from drug administrations of the NSCLC-directed agents (a whitelist, here cisplatin and paclitaxel) on or after diagnosis; other cancers' regimens and hormone preparations are excluded. Line 1 starts at the first administration, with its regimen defined by the drugs started within 28 days; **a gap of more than 90 days between administrations starts the next line**, and a new drug alone never does. The 90-day threshold is a dbt variable, and 60 and 120 days were run as sensitivity analyses. The data support it: administrations are one day apart in `r n0(t_[["gap_1day_n"]])` of `r n0(t_[["gaps_total"]])` gaps, cycles are separated by 29–60 days (99th percentile `r f1(t_[["gap_p99_days"]], 0)` days), so a 28-day gap would start a new line in `r f1(100 * t_[["patients_gap_gt28"]] / t_[["treated_n"]])`% of patients, whereas 90 days isolates `r t_[["patients_gap_gt90"]]` (`r f1(100 * t_[["patients_gap_gt90"]] / t_[["treated_n"]])`%).
+
+## Survival methods
+
+Kaplan–Meier curves by stage with log(−log) confidence intervals (as SEER*Stat uses), compared with SEER at 1–5 years (SEER's own exported estimates and confidence limits). Medians and **restricted mean survival time** (RMST) to 60 months, the latter for SEER computed as the area under the monthly observed-survival curve. A Cox proportional hazards model (`stage + age + sex`) with the proportional-hazards assumption tested by `cox.zph` on Schoenfeld residuals, re-fitted without patients flagged for a prior other cancer. Finally a **direct-standardisation sensitivity analysis**: the Synthea main cohort was reweighted to SEER's age (50–64, 65–74, 75–84, 85+) by sex distribution within each stage, and the weighted Kaplan–Meier curve was re-estimated with a robust variance.
+
+## Why inverse probability of treatment weighting (IPTW) is not identifiable {#sec-iptw}
+
+IPTW needs variation in treatment. Among the `r n0(t_[["main_cohort_n"]])` patients, `r n0(t_[["first_line_modal_type_n"]])` received the same first line (@sec-treatment), so the probability of that treatment is about 1 in every stratum, propensity scores would be degenerate, and the single untreated patient would dominate any weights. A first-line treatment comparison is therefore not identifiable in this data, and no treatment-effect model is fitted.
+
+# Results
+
+## Cohort and demographics
+
+```{r demographics}
+d <- dem |> filter(cohort == "main")
+dt <- d |> transmute(Stage = stage, `Synthea n` = n0(synthea_n), `SEER n` = n0(seer_n),
+  `% male (Synthea / SEER)` = sprintf("%.1f / %.1f", synthea_pct_male, seer_pct_male),
+  `50–64` = sprintf("%.1f / %.1f", synthea_pct_50_64, seer_pct_50_64), `65–74` = sprintf("%.1f / %.1f", synthea_pct_65_74, seer_pct_65_74),
+  `75–84` = sprintf("%.1f / %.1f", synthea_pct_75_84, seer_pct_75_84), `85+` = sprintf("%.1f / %.1f", synthea_pct_85plus, seer_pct_85plus))
+tab(dt, caption = "Synthea main cohort vs SEER: percent male and percent in each age band at diagnosis (Synthea / SEER).")
+```
+
+The synthetic cohort is about three-quarters male (`r f1(d$synthea_pct_male[d$stage == "All staged (I-IV)"])`% vs `r f1(d$seer_pct_male[d$stage == "All staged (I-IV)"])`% in SEER) and younger (`r f1(d$synthea_pct_50_64[d$stage == "All staged (I-IV)"])`% aged 50–64 vs `r f1(d$seer_pct_50_64[d$stage == "All staged (I-IV)"])`%). **Synthea has no patients aged 85 or over**: its oldest patient at diagnosis is just under 85 (`r f1(as.numeric(kvv[["max_age_at_dx_main"]]), 2)` years), because the generator draws people aged 50–90 at the reference date, while SEER has `r f1(d$seer_pct_85plus[d$stage == "All staged (I-IV)"])`% in that band.
+
+## Kaplan–Meier curves versus SEER
+
+![Kaplan–Meier survival by stage in the Synthea main cohort (steps, 95% log-log CI, numbers at risk) against SEER observed survival at years 1–5.](../figures/km_synthea_vs_seer.png){width=100%}
+
+```{r km-table}
+k <- kmm |> transmute(Stage = stage, Year = year, `Synthea at risk` = n0(synthea_n_at_risk), `Synthea S(t), % (95% CI)` = synthea_S_ci,
+                      `SEER S(t), % (95% CI)` = seer_S_ci, `Difference, pp` = diff_pp)
+tab(k, caption = "Survival at 1–5 years, main cohort. S(t) is 0 once every patient in a stage has died (no one is at risk).")
+```
+
+## Medians and restricted mean survival time
+
+```{r med-rmst}
+mr <- medm |> select(stage, synthea_median_months, synthea_median_lcl, synthea_median_ucl, seer_median_months) |>
+  left_join(rm_ |> select(stage, synthea_rmst_ci, seer_rmst_months, difference_months), by = "stage") |>
+  transmute(Stage = stage, `Median, Synthea (95% CI)` = sprintf("%.1f (%.1f–%.1f)", synthea_median_months, synthea_median_lcl, synthea_median_ucl),
+            `Median, SEER` = seer_median_months, `RMST 60 mo, Synthea (95% CI)` = synthea_rmst_ci, `RMST 60 mo, SEER` = seer_rmst_months, `RMST difference` = difference_months)
+tab(mr, caption = "Median survival and restricted mean survival time to 60 months (months), main cohort.")
+```
+
+The summaries agree for some stages (the stage III median, the stage I RMST) and not for others: the stage I median is `r med_ratio("I")` months, stage II `r med_ratio("II")`, and the stage II and III RMSTs are about `r f1(abs(g(rm_, "II", "difference_months")), 0)` and `r f1(abs(g(rm_, "III", "difference_months")), 0)` months shorter than SEER's. A single number can look right while the curve is wrong.
+
+## Cox model and the proportional-hazards test {#sec-cox}
+
+```{r cox}
+fm <- function(x) vapply(x, function(v) format(signif(v, 3), big.mark = ",", scientific = FALSE, trim = TRUE), "")
+lab <- c(stageII = "Stage II (vs I)", stageIII = "Stage III (vs I)", stageIV = "Stage IV (vs I)", age_at_dx = "Age (per year)", `age_at_dx (per 10 years)` = "Age (per 10 years)", sexM = "Male (vs female)")
+fy <- function(x) sprintf("%.3f", x)
+h <- hr |> filter(model == "main") |> mutate(py = term == "age_at_dx") |> transmute(Term = unname(lab[term]), `Hazard ratio` = ifelse(py, fy(hr), fm(hr)), `95% CI` = ifelse(py, paste(fy(lcl), "–", fy(ucl)), paste(fm(lcl), "–", fm(ucl))), p = format.pval(p, digits = 2, eps = 1e-16))
+tab(h, caption = "Cox model for overall survival, main cohort (reference: stage I, female).")
+```
+
+**The stage hazard ratios (`r f1(hrm("stageII", "hr"), 0)`, `r f1(hrm("stageIII", "hr"), 0)` and `r f1(hrm("stageIV", "hr"), 0)` against stage I) reflect near-complete separation of survival times by stage, not clinical effect sizes.** Each stage's death falls inside a scripted window, and neighbouring windows overlap only at their edges, so the model is close to separation and its estimates and intervals are numerically extreme. The proportional-hazards assumption fails for stage (`r paste0("global test p ", pfm(phv("term", "GLOBAL")))`; by coefficient, stage II p `r pfm(phv("coefficient", "stageII"))`, stage III p `r pfm(phv("coefficient", "stageIII"))`), consistent with the Kaplan–Meier comparison. Age (HR `r f1(hrm("age_at_dx (per 10 years)", "hr"), 2)` per 10 years) and sex (HR `r f1(hrm("sexM", "hr"), 2)`) have essentially no effect in Synthea, whereas in real NSCLC observed survival worsens with age and is generally lower in men: the simulator's survival after diagnosis depends on stage alone. Excluding the `r kvv[["prior_other_cancer_n"]]` patients flagged for a prior other cancer does not change this pattern.
+
+![Schoenfeld residuals by coefficient, main cohort.](../figures/cox_schoenfeld_residuals.png){width=100%}
+
+## Reweighting to SEER's age and sex distribution
+
+```{r reweight}
+rt <- rw |> filter(year == 5) |> transmute(Weighting = weighting, Stage = stage, `Unweighted, % (95% CI)` = unweighted_S_ci, `Reweighted, % (95% CI)` = reweighted_S_ci,
+                                           `Change, pp` = change_pp, `SEER, %` = seer_S_pct)
+tab(rt, caption = "Five-year survival before and after reweighting the Synthea main cohort to SEER's age by sex distribution within each stage. The 4-band weighting drops SEER's 85+ cells, which have no Synthea patients; the 3-band weighting merges ages 75 and over.")
+```
+
+Reweighting barely moves the five-year estimates: stage I goes from `r f1(rw4("I", "unweighted_S_pct"))`% to `r f1(rw3("I", "reweighted_S_pct"))`–`r f1(rw4("I", "reweighted_S_pct"))`% against `r f1(rw4("I", "seer_S_pct"))`% in SEER, and stages II–IV stay at 0%, because every such patient has died long before five years whatever their age or sex. Demographic differences therefore do not explain the gap with SEER; some intermediate years move by several percentage points, with wide intervals, in strata with few patients at risk (full table in `results/km_synthea_vs_seer_reweighted.csv`).
+
+## Treatment patterns and lines of therapy {#sec-treatment}
+
+```{r first-line}
+ft <- tr1 |> pivot_wider(names_from = first_line, values_from = n) |> rename(Stage = stage)
+tab(ft, caption = "First-line treatment type by stage, main cohort (chemoradiation if the combined procedure falls within 28 days of the first systemic dose).")
+```
+
+`r n0(t_[["first_line_modal_type_n"]])` of `r n0(t_[["main_cohort_n"]])` patients received cisplatin and paclitaxel together with the combined chemotherapy and radiation procedure, a median `r t_[["days_to_first_median"]]` days after diagnosis (IQR `r t_[["days_to_first_q1"]]`–`r t_[["days_to_first_q3"]]`); one patient has no recorded treatment. First-line type is not even associated with stage (Cramér's V `r f1(t_[["cramers_v_stage_vs_first_line"]], 3)`, p = `r f1(t_[["chisq_p_stage_vs_first_line"]], 2)`): it is constant. The number of administration dates per patient rises with survival (median `r t_[["admin_dates_median_stage_I"]]`, `r t_[["admin_dates_median_stage_II"]]`, `r t_[["admin_dates_median_stage_III"]]` and `r t_[["admin_dates_median_stage_IV"]]` in stages I to IV), because treatment simply continues until death.
+
+```{r lines}
+tab(lg |> transmute(`Gap, days` = gap_days, `Treated patients` = n0(treated_patients), `With a line 2` = patients_with_line2, `With 3 or more lines` = patients_with_3plus_lines, `Total lines` = n0(total_lines)),
+    caption = "Lines of therapy by gap length (the default is 90 days).")
+```
+
+At the default gap `r t_[["line2_n"]]` patients (`r f1(100 * t_[["line2_n"]] / t_[["treated_n"]])`%) have a second line, and every line 1 and line 2 is cisplatin plus paclitaxel. Time to next treatment is therefore essentially time to death: of `r n0(t_[["ttnt_event_n"]])` events only `r t_[["line2_n"]]` are line 2 starts (median `r f1(t_[["ttnt_median_months"]])` months). `r kvv[["prior_other_cancer_n"]]` patients (`r f1(100 * as.numeric(kvv[["prior_other_cancer_n"]]) / t_[["main_cohort_n"]])`%) had another cancer's treatment or diagnosis before the NSCLC diagnosis (`r kvv[["prior_by_drug_n"]]` by drug, `r kvv[["prior_by_procedure_n"]]` by procedure, `r kvv[["prior_by_diagnosis_n"]]` by diagnosis; overlapping).
+
+## Data quality (OHDSI Data Quality Dashboard) {#sec-dqd}
+
+```{r dqd}
+dq <- list(total = sum(dqs$total), passed = sum(dqs$passed), failed = sum(dqs$failed), na = sum(dqs[["not applicable"]]), err = sum(dqs$errored),
+           threshold = sum(dqf$check != "cdmTable"))
+tab(dqs |> select(Category = category, Checks = total, Passed = passed, Failed = failed, `Not applicable` = `not applicable`, Errored = errored), caption = "OHDSI Data Quality Dashboard, CDM 5.4: checks by category.")
+```
+
+Of `r n0(dq$total)` checks, `r n0(dq$passed)` passed and `r dq$failed` failed (`r dq$na` were not applicable because the table is empty and `r dq$err` errored because the optional COHORT tables do not exist). Two of the failed checks are on those absent tables, so `r dq$threshold` are threshold failures:
+
+```{r dqd-fail}
+tab(dqf |> filter(check != "cdmTable") |> transmute(Category = category, Check = check, `Table.field` = ifelse(is.na(field), table, paste0(table, ".", field)), `% violated` = pct_violated, Cause = cause), caption = "Threshold failures and their causes (Synthea artefact, ETL, or vocabulary release).")
+```
+
+Two failures touch the cohort's source tables (`CONDITION_OCCURRENCE.CONDITION_STATUS_CONCEPT_ID` is empty and `OBSERVATION_PERIOD` starts before 1950 for older patients), and neither affects a field the cohort uses; every check on `person`, `death` and the cohort's condition and observation-period fields passes. The dashboard did **not** detect the stage III small-cell mapping: the extra rows are well-formed and plausible, which is why that problem was found by cohort-level tests and by comparing the load with the source files.
+
+# Discussion
+
+**What Synthea gets right.** It orders the stages correctly (median survival falls from stage I to IV), its stage mix can be calibrated to SEER, and it provides the structure a real EHR pipeline needs: encounters, conditions, drugs, procedures and deaths that map cleanly into OMOP, with realistic messiness such as other cancers, hormone preparations and missing fields. As a test bed for the pipeline (ETL, cohort definitions, tests, survival code) it did its job, including exposing a vocabulary mapping problem.
+
+**What it gets wrong.** The *shape* of survival is wrong. Deaths are scripted in stage-specific windows, so survival is flat and then collapses, nobody with stage II–IV disease is followed beyond `r ceiling(fu_max)` months, and the curves cannot be reconciled with SEER's long tails. There is no age or sex effect. Treatment is constant, so the treatment question cannot be studied at all. Demographics differ (three-quarters male, no patients aged 85 or over). Calibrating the stage mix to SEER makes the stage distribution agree by construction, but not the outcomes.
+
+**Lesson: validate full distributions, not summary statistics.** A stage III median of `r med_ratio("III")` months and a stage I RMST within about a month of SEER's would have passed this data as realistic. Only the full curves, the five-year survival, the proportional-hazards test and the treatment table show that it is not. A validation of synthetic data against a benchmark should compare whole curves, subgroup by subgroup, and check what the data generator cannot vary.
+
+# Limitations
+
+- The data are synthetic: effect estimates are not clinical evidence, and the Synthea lung cancer module scripts survival by design.
+- One simulated run (one seed) was analysed; results are not averaged over simulations.
+- SEER survival is observed (all-cause) survival, includes first primary cancers only, and uses AJCC 7th edition stage; the Synthea stages are TNM labels mapped to the same four groups. Calendar-period effects (such as COVID-19-era mortality) and age-related background mortality affect SEER's observed survival; in Synthea, age has no detectable effect on survival (@sec-cox).
+- SEER intervals at 1–5 years are SEER*Stat's own log(−log) limits; the survival curves of the two sources are compared at yearly points, not by a formal test.
+- The stage mix was set from SEER, so agreement on stage distribution is by construction; the benchmark is informative about survival, not stage mix.
+- The sensitivity cohort (diagnosed 2010–2015) is small (`r n0(g(med |> filter(cohort == "sensitivity"), "I", "synthea_n") + g(med |> filter(cohort == "sensitivity"), "II", "synthea_n") + g(med |> filter(cohort == "sensitivity"), "III", "synthea_n") + g(med |> filter(cohort == "sensitivity"), "IV", "synthea_n"))` patients).
+- Reweighting could not represent SEER's 85+ patients (no Synthea patients), and its effective sample size is much smaller than the cohort.
+- The Cox hazard ratios are numerically extreme (near-separation) and the proportional-hazards assumption fails for stage.
+- The vocabulary findings (stage III mapping, DQD observations) refer to one Athena release and one ETL version.
+- Time to next treatment is mostly time to death because second lines are rare.
+
+# Reproducibility
+
+The repository is at `r repo_url` and contains all code; the generated data are not committed. To reproduce (from the repository root; prerequisites and setup are in the README):
+
+1. Create the database and role: `etl/setup_postgres.ps1`; generate the data: `synthea/run_generate.ps1`; keep lung cancer patients: `tools/filter_lung_cancer.py`.
+2. Load the vocabularies and the Synthea tables and map to OMOP: `etl/01_load_vocab.R`, `etl/01b_load_vocab_copy.sh`, `etl/01c_vocab_indexes.sql`, `etl/02a_load_native_copy.sh`, then `Rscript etl/02_etl_synthea.R`; check the load with `tools/verify_omop.py`.
+3. Build and test the cohort: `dbt build --project-dir dbt --profiles-dir dbt` (profile template in `dbt/profiles.example.yml`).
+4. Analyses: `analysis/km_synthea_vs_seer.R`, `analysis/cox_os.R`, `analysis/rmst.R`, `analysis/seer_age_sex_reweighting.R` and `analysis/report_inputs.R`. The SEER-based scripts need the local SEER*Stat exports (not in the repository); the committed aggregates in `seer/` and `results/` are enough to render this report.
+5. Render this report: `quarto render report/report.qmd` (every number is read from `results/`, `seer/` and the repository files).
+
+Software: R 4.6.1, PostgreSQL 17, dbt-postgres 1.12, Quarto 1.10, OHDSI ETL-Synthea 2.1, DataQualityDashboard 2.8.9. Library versions are recorded in `results/sessionInfo.txt`.
+
+# Use of AI tools
+
+```{r ai, results = "asis"}
+i <- grep("^## Use of AI tools", readme); j <- grep("^## ", readme); j <- j[j > i][1]
+cat(paste(readme[(i + 1):(j - 1)], collapse = "\n"))
+```
+
+Code and results: `r repo_url`. `r medium_txt`.

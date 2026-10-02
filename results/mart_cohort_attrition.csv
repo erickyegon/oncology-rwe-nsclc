@@ -1,0 +1,10 @@
+step_order,step,n_persons
+1,People in the OMOP CDM (lung cancer export),1886
+2,With a lung cancer diagnosis code,1886
+3,Excluded: small cell (source code),264
+4,NSCLC (source code),1622
+5,Excluded: NSCLC without a single TNM stage code,1
+6,Staged NSCLC,1621
+7,Excluded: age at diagnosis under 50,274
+8,Main analysis cohort,1347
+9,Sensitivity cohort (diagnosed 2010-2015),305

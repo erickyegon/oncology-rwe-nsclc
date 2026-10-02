@@ -1,0 +1,21 @@
+"model","level","name","chisq","df","p"
+"main","term","stage",456.5,3,1.3e-98
+"main","term","age_at_dx",0.008109,1,0.928
+"main","term","sex",0.5523,1,0.457
+"main","term","GLOBAL",457.1,5,1.45e-96
+"main","coefficient","stageII",9.129,1,0.00252
+"main","coefficient","stageIII",15.29,1,9.2e-05
+"main","coefficient","stageIV",0.446,1,0.504
+"main","coefficient","age_at_dx",0.008109,1,0.928
+"main","coefficient","sexM",0.5523,1,0.457
+"main","coefficient","GLOBAL",457.1,5,1.45e-96
+"excluding prior_other_cancer","term","stage",136.5,3,2.19e-29
+"excluding prior_other_cancer","term","age_at_dx",0.04304,1,0.836
+"excluding prior_other_cancer","term","sex",0.7985,1,0.372
+"excluding prior_other_cancer","term","GLOBAL",137.2,5,7.02e-28
+"excluding prior_other_cancer","coefficient","stageII",5.862,1,0.0155
+"excluding prior_other_cancer","coefficient","stageIII",6.994,1,0.00818
+"excluding prior_other_cancer","coefficient","stageIV",0.4272,1,0.513
+"excluding prior_other_cancer","coefficient","age_at_dx",0.04304,1,0.836
+"excluding prior_other_cancer","coefficient","sexM",0.7985,1,0.372
+"excluding prior_other_cancer","coefficient","GLOBAL",137.2,5,7.02e-28

@@ -1,0 +1,13 @@
+stage,first_line,n
+I,chemotherapy + radiation,292
+I,chemotherapy alone,0
+I,none recorded,0
+II,chemotherapy + radiation,109
+II,chemotherapy alone,0
+II,none recorded,0
+III,chemotherapy + radiation,261
+III,chemotherapy alone,0
+III,none recorded,0
+IV,chemotherapy + radiation,684
+IV,chemotherapy alone,0
+IV,none recorded,1

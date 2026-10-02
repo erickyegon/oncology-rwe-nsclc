@@ -1,0 +1,19 @@
+category,check,table,field,violated,denom,pct_violated,cause,touches_cohort_source_table
+Conformance,cdmTable,COHORT,,NA,NA,NA,optional table absent,FALSE
+Conformance,cdmTable,COHORT_DEFINITION,,NA,NA,NA,optional table absent,FALSE
+Completeness,measurePersonCompleteness,DRUG_ERA,,1886,1886,100,ETL (deliberate: step skipped),FALSE
+Conformance,fkClass,DRUG_STRENGTH,INGREDIENT_CONCEPT_ID,3587,2966568,0.1,vocabulary release,FALSE
+Conformance,isStandardValidConcept,OBSERVATION,OBSERVATION_TYPE_CONCEPT_ID,1058644,1059337,99.9,ETL,FALSE
+Completeness,standardConceptRecordCompleteness,CONDITION_OCCURRENCE,CONDITION_STATUS_CONCEPT_ID,52832,52832,100,ETL,TRUE
+Completeness,standardConceptRecordCompleteness,MEASUREMENT,UNIT_CONCEPT_ID,1094453,2954339,37,Synthea,FALSE
+Completeness,standardConceptRecordCompleteness,OBSERVATION,UNIT_CONCEPT_ID,1059337,1059337,100,ETL,FALSE
+Completeness,standardConceptRecordCompleteness,VISIT_DETAIL,ADMITTED_FROM_CONCEPT_ID,174498,174498,100,Synthea,FALSE
+Completeness,standardConceptRecordCompleteness,VISIT_DETAIL,DISCHARGED_TO_CONCEPT_ID,174498,174498,100,Synthea,FALSE
+Completeness,standardConceptRecordCompleteness,VISIT_OCCURRENCE,ADMITTED_FROM_CONCEPT_ID,174498,174498,100,Synthea,FALSE
+Completeness,standardConceptRecordCompleteness,VISIT_OCCURRENCE,DISCHARGED_TO_CONCEPT_ID,174498,174498,100,Synthea,FALSE
+Plausibility,plausibleValueLow,DRUG_EXPOSURE,DAYS_SUPPLY,376733,496822,75.8,ETL / Synthea,FALSE
+Plausibility,plausibleValueLow,DRUG_EXPOSURE,QUANTITY,496822,496822,100,ETL,FALSE
+Plausibility,plausibleValueLow,OBSERVATION_PERIOD,OBSERVATION_PERIOD_START_DATE,252,1886,13.4,Synthea,TRUE
+Plausibility,plausibleValueHigh,DRUG_EXPOSURE,DAYS_SUPPLY,12863,496822,2.6,ETL / Synthea,FALSE
+Plausibility,plausibleBeforeDeath,PAYER_PLAN_PERIOD,PAYER_PLAN_PERIOD_END_DATE,1496,75056,2,Synthea,FALSE
+Plausibility,plausibleUnitConceptIds,MEASUREMENT,MEASUREMENT_CONCEPT_ID,21922,23871,91.8,Synthea,FALSE

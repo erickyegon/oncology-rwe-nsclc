@@ -1,0 +1,10 @@
+table,rows
+person,1886
+visit_occurrence,174498
+condition_occurrence,52832
+drug_exposure,496822
+procedure_occurrence,545478
+measurement,2954339
+observation,1059337
+death,1818
+observation_period,1886

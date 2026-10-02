@@ -1,8 +1,11 @@
 # Oncology RWE: NSCLC overall survival by stage and first-line treatment
 
-**How realistic is synthetic oncology EHR data?** This project builds an NSCLC survival pipeline on synthetic EHR data (Synthea → OMOP CDM → dbt → R) and benchmarks it against 172,582 real U.S. patients from SEER, including a documented bug that made half of all synthetic lung cancers stage I. Synthea ranks the stages correctly, and its median survival for stage III nearly matches SEER (13 vs 14 months), but the shape of survival is wrong. Almost nobody in the synthetic cohort dies in the first months after diagnosis (7 of 1,347 within 6 months), and nobody with stage II–IV disease is alive after 28 months. Among the 160,258 real SEER patients with known stage, 33%, 17% and 4% of stage II, III and IV patients are alive at 5 years, and 5-year survival for stage I is 53%, against 18% in Synthea. Medians alone would have passed this data as realistic; the full curves show it can test a pipeline but not stand in for real-world outcomes.
+**How realistic is synthetic oncology EHR data?** This project builds an NSCLC survival pipeline on synthetic EHR data (Synthea → OMOP CDM → dbt → R) and benchmarks it against 172,582 real U.S. patients from SEER, including a documented bug: unmodified Synthea staged every lung cancer as stage I, and after the first patch a second module still left half (51.5%) at stage I. Synthea ranks the stages correctly, and its median survival for stage III nearly matches SEER (13 vs 14 months), but the shape of survival is wrong. Almost nobody in the synthetic cohort dies in the first months after diagnosis (7 of 1,347 within 6 months), and nobody with stage II–IV disease is alive after 28 months. Among the 160,258 real SEER patients with known stage, 33%, 17% and 4% of stage II, III and IV patients are alive at 5 years, and 5-year survival for stage I is 53%, against 18% in Synthea. Medians alone would have passed this data as realistic; the full curves show it can test a pipeline but not stand in for real-world outcomes.
 
 ![Kaplan–Meier survival by stage, Synthea vs SEER](figures/km_synthea_vs_seer.png)
+
+Full study report: https://erickyegon.github.io/oncology-rwe-nsclc/report.html\
+One-page summary: [docs/one_page_summary.pdf](docs/one_page_summary.pdf)
 
 *Synthea: staged NSCLC, age ≥50, n = 1,347. SEER 17: NSCLC diagnosed 2010–2015, age 50+, known stage, n = 160,258. Full table: results/km_synthea_vs_seer.csv.*
 
@@ -134,7 +137,7 @@ It does **not** cover third-party data or content:
 - **Synthea** is open source under its own license; the generated synthetic data are not committed (only generation settings and the edited module files). The two edited module files in `synthea/modules/` are derived from Synthea (MITRE) and remain under its Apache 2.0 license; see [`synthea/modules/NOTICE`](synthea/modules/NOTICE).
 
 ## Status
-Lines of therapy, Cox model and RMST complete. Next: Quarto report. See [`PLAN.md`](PLAN.md).
+Study complete: report and one-page summary published. See [`PLAN.md`](PLAN.md).
 
 ## Running the code
 Run everything from the repository root.

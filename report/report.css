@@ -1,0 +1,4 @@
+body { font-size: 16px; }
+table { font-size: 0.85em; }
+table caption { caption-side: top; font-style: italic; }
+figure img { max-width: 100%; }

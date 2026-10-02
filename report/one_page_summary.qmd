@@ -1,0 +1,46 @@
+---
+title: "How realistic is synthetic oncology EHR data for real-world evidence?"
+subtitle: "Erick Kiprotich Yegon · [keyegon@gmail.com](mailto:keyegon@gmail.com) · [linkedin.com/in/erickyegon](https://linkedin.com/in/erickyegon)"
+format:
+  typst:
+    papersize: us-letter
+    margin: { x: 0.7in, y: 0.6in }
+    fontsize: 9pt
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+suppressPackageStartupMessages(library(readr))
+root <- ".."
+rd <- function(f) read_csv(file.path(root, f), show_col_types = FALSE)
+rm_ <- rd("results/rmst_synthea_vs_seer.csv"); md <- rd("results/km_median_survival_by_stage.csv")
+hr <- rd("results/cox_os_hazard_ratios.csv"); rw <- rd("results/km_synthea_vs_seer_reweighted.csv")
+at <- rd("results/mart_cohort_attrition.csv")
+f1 <- function(x, d = 1) formatC(x, format = "f", digits = d)
+r <- function(s) rm_[rm_$cohort == "main" & rm_$stage == s, ]
+m <- function(s) md[md$cohort == "main" & md$stage == s, ]
+n_main <- r("I")$synthea_n + r("II")$synthea_n + r("III")$synthea_n + r("IV")$synthea_n
+hrm <- function(t) hr[hr$model == "main" & hr$term == t, ]
+age10 <- hrm("age_at_dx (per 10 years)")$hr; sexM <- hrm("sexM")$hr
+s5 <- rw[rw$stage == "I" & rw$year == 5, ][1, ]
+repo_url <- "https://github.com/erickyegon/oncology-rwe-nsclc"
+```
+
+**Question.** Does synthetic EHR data (Synthea) reproduce real-world non-small cell lung cancer (NSCLC) survival well enough for RWE method development, judged against SEER registry aggregates?
+
+**Data and pipeline.** Synthea (synthetic EHR) → OMOP CDM 5.4 (ETL-Synthea) → PostgreSQL → dbt → R survival analysis → SEER 17 (Nov 2025) benchmark; `r format(n_main, big.mark = ",")` staged NSCLC patients aged 50 and over.
+
+### Three findings
+
+1. **Summary numbers can look right while the curves are wrong.** The stage III median is `r f1(m("III")$synthea_median_months)` vs `r f1(m("III")$seer_median_months, 0)` months in SEER, and stage I 5-year RMST is `r f1(r("I")$synthea_rmst_months)` vs `r f1(r("I")$seer_rmst_months)` months. But stage I survival at 5 years is `r f1(s5$unweighted_S_pct)`% in Synthea against `r f1(s5$seer_S_pct)`% in SEER, and stages II–IV fall to 0% by design (scripted death windows).
+2. **Stage ordering is right but the effect is exaggerated.** Cox hazard ratios against stage I are `r f1(hrm("stageII")$hr)`, `r f1(hrm("stageIII")$hr, 0)` and `r format(round(hrm("stageIV")$hr, -1), big.mark = ",")` (near-complete separation); proportional hazards are rejected.
+3. **No age or sex signal, and no treatment contrast.** Age HR `r f1(age10, 2)` per 10 years and male HR `r f1(sexM, 2)`; reweighting to the SEER age/sex mix leaves stages II–IV unchanged. 1,346 of 1,347 patients received the same first line, so treatment effects are not identifiable.
+
+**Lesson:** validate the whole distribution, not summary statistics.
+
+![](_tmp/km.png){fig-align="center" width="6.2in"}
+
+Synthetic EHR plus public registry aggregates only; no real patient data. Code and results: <https://github.com/erickyegon/oncology-rwe-nsclc>. Medium article: <https://medium.com/@keyegon/from-seer-stat-to-r-a-practical-guide-to-extracting-and-validating-cancer-survival-data-2601dd584b88>.

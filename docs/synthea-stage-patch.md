@@ -2,7 +2,7 @@
 
 [Back to README](../README.md)
 
-**Finding.** In an unmodified Synthea run (`master-branch-latest`, jar built 2026-08-18, seed 2026, ages 50-90, 20,000 patients) every lung cancer case was **stage 1**: 535 NSCLC and 98 small cell, none at stages 2-4. A stage comparison and a stage-level SEER benchmark are impossible on that output.
+**Finding.** In an unmodified Synthea run (`master-branch-latest`, jar built 2026-08-18, seed 2026, ages 50-90, 20,000 patients) every lung cancer case was **stage 1**: 535 NSCLC and 98 small cell, none at stages 2-4. The summary output of this initial run was not retained; the later 60,000-patient runs have committed summaries in `synthea/evidence/`. A stage comparison and a stage-level SEER benchmark are impossible on that output.
 
 **Why.** In `lung_cancer.json`, the state `Schedule Follow Up III` assigns stage from the attribute `lung_cancer_nondiagnosis_counter` (Stage I if <= 36, II if <= 72, III if <= 108, otherwise IV). The counter increments once per loop in `Undiagnosed_Lung_Cancer`, where a patient has a 20% chance of seeking care each pass. The chance of exceeding 36 passes is about 0.8^36, roughly 0.03%, so nearly everyone is stage I. Separately, survival is scripted by stage in the module (stage I death 2-6 years after diagnosis, stage IV 6-10 months), so survival differences by stage are built in, not discovered.
 

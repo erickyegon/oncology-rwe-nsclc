@@ -1,0 +1,14 @@
+key,value
+vocabulary_version,v5.0 29-AUG-26
+persons_in_cdm,1886
+stage3_code_persons,312
+stage3_code_rows,624
+persons_with_small_cell_concept,576
+true_small_cell_persons,264
+nsclc_persons,1622
+max_age_at_dx_main,84.96
+max_followup_months_main,71.984
+prior_other_cancer_n,241
+prior_by_drug_n,199
+prior_by_procedure_n,30
+prior_by_diagnosis_n,73

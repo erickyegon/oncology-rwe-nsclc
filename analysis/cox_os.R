@@ -46,6 +46,12 @@ hr_table <- function(m, label) {
 }
 hr <- rbind(hr_table(main, "main"), hr_table(sens, "excluding prior_other_cancer"))
 write.csv(transform(hr, hr = signif(hr, 4), lcl = signif(lcl, 4), ucl = signif(ucl, 4), p = signif(p, 3)), "results/cox_os_hazard_ratios.csv", row.names = FALSE)
+ph_table <- function(m, label) {                      # proportional-hazards tests, by term (stage as one 3-df term) and by coefficient
+  one <- function(z, level) { tb <- z$table; data.frame(model = label, level = level, name = rownames(tb), chisq = tb[, "chisq"], df = tb[, "df"], p = tb[, "p"], row.names = NULL) }
+  rbind(one(m$zph, "term"), one(m$zph_c, "coefficient"))
+}
+ph <- rbind(ph_table(main, "main"), ph_table(sens, "excluding prior_other_cancer"))
+write.csv(transform(ph, chisq = signif(chisq, 4), p = signif(p, 3)), "results/cox_os_ph_tests.csv", row.names = FALSE)
 cat("\n==== HAZARD RATIOS (95% CI); reference: stage I, female ====\n")
 print(transform(hr, hr = signif(hr, 4), lcl = signif(lcl, 4), ucl = signif(ucl, 4), p = signif(p, 3)), row.names = FALSE)
 cat(sprintf("\nConcordance: main %.3f (se %.3f); excluding prior_other_cancer %.3f (se %.3f)\n", concordance(main$fit)$concordance, sqrt(concordance(main$fit)$var),
