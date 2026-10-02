@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: cdm
+    description: OMOP CDM 5.4 tables loaded by etl/02_etl_synthea.R from the lung-cancer-filtered Synthea export.
+    schema: cdm
+    tables:
+      - name: person
+      - name: condition_occurrence
+      - name: death
+      - name: observation_period
+      - name: concept

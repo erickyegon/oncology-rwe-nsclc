@@ -1,0 +1,29 @@
+name: 'oncology_rwe'
+version: '1.0.0'
+config-version: 2
+
+# Credentials live in profiles.yml, which reads PG_HOST / PG_PORT / PG_DB / PG_USER / PG_PASSWORD from the
+# environment (same variables as .Renviron). profiles.yml is gitignored; it is never committed.
+profile: 'oncology_rwe'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  followup_cap_months: 120      # main analysis: follow-up censored at 120 months
+  min_age_at_dx: 50             # main analysis: age >= 50 at diagnosis (matches the SEER pull)
+  sensitivity_start_year: 2010  # sensitivity analysis: diagnosed 2010-2015
+  sensitivity_end_year: 2015
+  days_per_month: 30.4375
+  days_per_year: 365.25
+
+models:
+  oncology_rwe:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table

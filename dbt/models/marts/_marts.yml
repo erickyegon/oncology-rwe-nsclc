@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: mart_nsclc_cohort
+    description: >
+      Main analysis cohort, one row per person: staged NSCLC, age >= 50 at diagnosis, all diagnosis years, follow-up
+      censored at 120 months. Histology and stage come from SNOMED source codes, not standard concepts.
+    columns:
+      - name: person_id
+        data_tests: [unique, not_null]
+      - name: index_date
+        data_tests: [not_null]
+      - name: age_at_dx
+        data_tests: [not_null]
+      - name: sex
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['M', 'F']
+      - name: stage
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['I', 'II', 'III', 'IV']
+      - name: followup_months
+        description: Months from index date to death or last recorded activity, capped at 120.
+        data_tests: [not_null]
+      - name: event
+        description: 1 if the person died within 120 months of the index date, else 0.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+      - name: censored_at_120
+        data_tests: [not_null]
+      - name: dx_2010_2015
+        description: Flag for the sensitivity cohort (diagnosed 2010-2015).
+        data_tests: [not_null]
+  - name: mart_cohort_attrition
+    description: Cohort flow table (people remaining after each rule).

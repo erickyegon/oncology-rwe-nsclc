@@ -114,6 +114,8 @@ Notes:
 
 **Filtering and "deaths".** Before the ETL each export is filtered to patients with a lung cancer diagnosis (`tools/filter_lung_cancer.py`). Every patient-keyed table is filtered on the same patient IDs; `organizations`, `providers` and `payers` are copied whole. Verified on the 20k export: 633 patients, and each of encounters, conditions, medications, procedures, observations, careplans, immunizations, devices, supplies and payer_transitions has rows for all 633 (allergies for the 80 who have any) with zero patient IDs outside the cohort. Synthea has no separate deaths table: death is `patients.DEATHDATE`, mapped to the OMOP `death` table by the ETL.
 
+Further ETL notes (the stage III small-cell vocabulary mapping, the skipped `drug_era` step, the extra-index timing test and the OMOP verification results) are in [`docs/provenance.md`](docs/provenance.md).
+
 ## License and data terms
 The **MIT License** (see [LICENSE](LICENSE)) covers **the code in this repository only**: the scripts, SQL/dbt models, R code, Synthea module edits and documentation I wrote.
 
