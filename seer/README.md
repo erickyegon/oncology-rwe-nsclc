@@ -9,6 +9,8 @@ SEER*Stat, SEER Research Data, 17 Registries, Nov 2025 Sub. NSCLC, diagnosed 201
 
 Superseded: an earlier same-day pull used "first matching record per person" and gave n = 213,428 (I 22.8%, II 8.7%, III 19.4%, IV 49.0%). The first-primary-only definition replaces it because it counts each person once at their first primary cancer.
 
+`nsclc_age_sex_by_stage_summary.csv` holds patient counts and percentages by stage, age band (50-64, 65-74, 75-84, 85+) and sex for the same SEER cohort (NSCLC diagnosed 2010-2015, age 50+), taken from the Cumulative Summary of a SEER*Stat frequency session; every count is at least 16 (the smallest is 502). The session export and its life tables stay local.
+
 ## Pull 2: observed survival by stage (`nsclc_survival_by_stage_summary.csv`)
 SEER*Stat survival session `nsclc_survival_by_stage_2010-2015` (Kaplan-Meier observed survival, 1-month intervals, 120 months, study cutoff 12/2023) for the same NSCLC definition: diagnosed 2010-2015, derived AJCC 7th edition stage group. N at diagnosis: Stage I 32,093; II 13,477; III 31,785; IV 82,903; unknown stage 12,324 (172,582 in all; 160,258 with known stage I-IV).
 
