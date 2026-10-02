@@ -15,6 +15,7 @@ knitr::opts_knit$set(root.dir = normalizePath(".."))
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, comment = "#>")
 has_seer_export <- file.exists(file.path(normalizePath(".."), "seer", "nsclc_age_sex_by_stage_2010-2015.csv"))
 knitr::opts_chunk$set(eval = has_seer_export)
+suppressPackageStartupMessages(library(ggplot2))
 ```
 
 ## What this notebook does
@@ -121,6 +122,43 @@ print(as.data.frame(dem_out |> select(cohort, stage, synthea_n, seer_n, synthea_
   synthea_pct_65_74, seer_pct_65_74, synthea_pct_75_84, seer_pct_75_84, synthea_pct_85plus, seer_pct_85plus)), row.names = FALSE)
 ```
 
+## Chart: age and sex pyramid, Synthea vs SEER
+
+Women to the left, men to the right, as a percentage of each cohort. The synthetic cohort is younger, more male, and has nobody aged 85 or over (the generator draws age at the reference date between 50 and 90).
+
+```{r chart-pyramid, fig.width = 9, fig.height = 4}
+pyr <- bind_rows(
+  mart |> count(age_band, sex = sexl) |> mutate(source = "Synthea"),
+  seer_cell |> group_by(age_band, sex) |> summarise(n = sum(n), .groups = "drop") |> mutate(source = "SEER 17")) |>
+  mutate(age_band = factor(age_band, BANDS)) |>
+  tidyr::complete(source, age_band, sex, fill = list(n = 0)) |>
+  group_by(source) |> mutate(pct = 100 * n / sum(n)) |> ungroup()
+ggplot(pyr, aes(age_band, ifelse(sex == "female", -pct, pct), fill = source)) +
+  geom_col(width = 0.8) + coord_flip() +
+  facet_wrap(~ source) +
+  scale_fill_manual(values = c("Synthea" = "#1f5fa8", "SEER 17" = "#d1495b"), guide = "none") +
+  scale_y_continuous(labels = function(x) paste0(abs(x), "%")) +
+  labs(x = "Age at diagnosis", y = "Percent of cohort (women left, men right)") +
+  theme_minimal() + theme(panel.grid.minor = element_blank())
+```
+
+## Chart: percent male by stage
+
+Share of men in each stage and overall. The synthetic cohort is about three-quarters male in every stage; SEER is about half.
+
+```{r chart-pct-male, fig.width = 8, fig.height = 4}
+sx <- dem_out |> filter(cohort == "main") |>
+  transmute(stage = factor(stage, c(STAGES, "All staged (I-IV)")), Synthea = synthea_pct_male, `SEER 17` = seer_pct_male) |>
+  tidyr::pivot_longer(-stage, names_to = "source", values_to = "pct_male")
+ggplot(sx, aes(stage, pct_male, fill = source)) +
+  geom_col(position = position_dodge(0.8), width = 0.7) +
+  geom_text(aes(label = sprintf("%.0f%%", pct_male)), position = position_dodge(0.8), vjust = -0.4, size = 3.2) +
+  scale_fill_manual(NULL, values = c("Synthea" = "#1f5fa8", "SEER 17" = "#d1495b")) +
+  scale_y_continuous(limits = c(0, 100)) +
+  labs(x = NULL, y = "Percent male") +
+  theme_minimal() + theme(legend.position = "bottom", panel.grid.minor = element_blank())
+```
+
 ## 4. Direct standardisation: building the weights
 
 Each synthetic patient gets a weight so that within a stage the age-by-sex cells match SEER's. Cells where SEER has patients but Synthea has none cannot be weighted; they are dropped and SEER's distribution is renormalised. The diagnostics show how much weight that leaves, and the effective sample size.
@@ -151,6 +189,20 @@ for (nm in names(weights_list)) {
     max_weight = round(max(w), 2), min_weight = round(min(w), 2), effective_n = round(sum(w)^2 / sum(w^2), 0), .groups = "drop")
   print(as.data.frame(diag), row.names = FALSE)
 }
+```
+
+## Chart: the size of the weights
+
+Each synthetic patient's weight (4 age bands). A weight of 1 means no change. Very large weights would make the result depend on a few patients; here the spread is modest, except where a cell is sparse.
+
+```{r chart-weights, fig.width = 9, fig.height = 5}
+w4 <- weights_list[["4 age bands"]][[1]]
+ggplot(w4, aes(w)) +
+  geom_histogram(bins = 30, fill = "#1f5fa8", colour = "white") +
+  geom_vline(xintercept = 1, linetype = 2) +
+  facet_wrap(~ stage, scales = "free", labeller = labeller(stage = function(x) paste("Stage", x))) +
+  labs(x = "Weight", y = "Patients") +
+  theme_minimal() + theme(panel.grid.minor = element_blank())
 ```
 
 ## 5. Weighted Kaplan-Meier at years 1-5
@@ -186,6 +238,25 @@ cat("\n==== WEIGHTED KAPLAN-MEIER AT YEARS 1-5 (main cohort; S in %, 95% log-log
 print(as.data.frame(res |> select(weighting, stage, year, synthea_n_at_risk_unweighted, unweighted_S_ci, reweighted_S_ci, change_pp, seer_S_pct)), row.names = FALSE)
 cat("\n==== CHANGE IN 5-YEAR SURVIVAL AFTER REWEIGHTING (percentage points) ====\n")
 print(as.data.frame(res |> filter(year == 5) |> select(weighting, stage, unweighted_S_pct, reweighted_S_pct, change_pp, seer_S_pct)), row.names = FALSE)
+```
+
+## Chart: stage I survival before and after reweighting
+
+Stage I survival at years 1-5: unweighted (solid blue), reweighted to SEER's age and sex mix (light blue, two weighting schemes) and SEER (red). Reweighting barely moves the curve, so demographic differences do not explain the gap. Stages II-IV are zero either way.
+
+```{r chart-reweighted, fig.width = 8, fig.height = 4.5}
+s1 <- res |> filter(stage == "I")
+unw1 <- s1 |> filter(weighting == first(weighting)) |> select(year, S = unweighted_S_pct)
+ggplot(s1, aes(year)) +
+  geom_line(data = unw1, aes(y = S, colour = "Synthea, unweighted"), linewidth = 1.1) +
+  geom_line(aes(y = reweighted_S_pct, colour = "Synthea, reweighted", linetype = weighting), linewidth = 0.9) +
+  geom_line(aes(y = seer_S_pct, colour = "SEER 17"), linewidth = 1.1) +
+  geom_point(aes(y = seer_S_pct, colour = "SEER 17"), size = 2.8) +
+  scale_colour_manual(NULL, values = c("Synthea, unweighted" = "#1f5fa8", "Synthea, reweighted" = "#6fa8e8", "SEER 17" = "#d1495b")) +
+  scale_linetype_manual("Weighting", values = c("4 age bands" = "dashed", "3 age bands (75+ merged)" = "dotted")) +
+  scale_y_continuous(limits = c(0, 100), labels = function(x) paste0(x, "%")) +
+  labs(x = "Years since diagnosis", y = "Observed survival") +
+  theme_minimal() + theme(legend.position = "bottom", legend.box = "vertical", panel.grid.minor = element_blank())
 ```
 
 ## Session information

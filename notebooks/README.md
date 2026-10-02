@@ -21,6 +21,8 @@ Start with [`00_start_here.Rmd`](00_start_here.Rmd), then go in order.
 **Needs:** PostgreSQL running with the `dbt` schema built, and a `.Renviron` in the repository root (see `.Renviron.example`). Notebooks 4 and 6 also need two local SEER*Stat exports that are not in the repository (see the notes inside).
 
 **Notes**
+- Notebooks 3 to 8 also include charts that are not in the scripts (for example death-time histograms with the scripted windows, a forest plot of hazard ratios, an age and sex pyramid, and treatment and data-quality summaries). They only read data the notebook already has and write no files.
+- Notebook 8 reads the local Data Quality Dashboard results file if `DQD_JSON` is set in `.Renviron` (see `.Renviron.example`); otherwise it leaves the `dqd_*.csv` files unchanged.
 - Notebooks 1 and 2 change the database, so their code cells are switched off (`run_etl <- FALSE`) until you set it to `TRUE`.
 - Notebooks 3 to 6 and 8 rewrite files in `results/`, `figures/` and `seer/` with the same content as the committed ones.
 - The `.R` scripts remain the way to run everything unattended (`Rscript analysis/<name>.R`); they also write console logs, which the notebooks do not.

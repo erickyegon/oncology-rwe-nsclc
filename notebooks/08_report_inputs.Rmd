@@ -13,7 +13,7 @@ output:
 # means every relative path below (".Renviron", "results/", "seer/", "figures/") works exactly as in the .R scripts.
 knitr::opts_knit$set(root.dir = normalizePath(".."))
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, comment = "#>")
-
+suppressPackageStartupMessages(library(ggplot2))
 ```
 
 ## What this notebook does
@@ -72,6 +72,36 @@ kv <- tibble::tribble(~key, ~value,
 write_csv(kv, "results/report_inputs.csv")
 ```
 
+## Chart: how the cohort is built
+
+From everyone with a lung cancer diagnosis to the analysis cohort, step by step (from `results/mart_cohort_attrition.csv`, written just above).
+
+```{r chart-attrition, fig.width = 8, fig.height = 3.8}
+att <- read_csv("results/mart_cohort_attrition.csv", show_col_types = FALSE) |>
+  mutate(step = factor(step, levels = rev(step)))
+ggplot(att, aes(n_persons, step)) +
+  geom_col(fill = "#1f5fa8") +
+  geom_text(aes(label = format(n_persons, big.mark = ",")), hjust = -0.1, size = 3.3) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.12))) +
+  labs(x = "Persons", y = NULL) +
+  theme_minimal() + theme(panel.grid.minor = element_blank())
+```
+
+## Chart: size of the OMOP tables
+
+Row counts of the main clinical tables in the OMOP CDM (log scale). The data are small enough to run on a laptop; the measurement table dominates.
+
+```{r chart-omop-counts, fig.width = 7, fig.height = 3.8}
+omop <- tibble(table = names(counts), rows = as.numeric(counts))
+ggplot(omop, aes(reorder(table, rows), rows)) +
+  geom_col(fill = "#1f5fa8") +
+  geom_text(aes(label = format(rows, big.mark = ",")), hjust = -0.1, size = 3.2) +
+  coord_flip() +
+  scale_y_log10(expand = expansion(mult = c(0, 0.25)), labels = scales::label_comma()) +
+  labs(x = NULL, y = "Rows (log scale)") +
+  theme_minimal() + theme(panel.grid.minor = element_blank())
+```
+
 ## Treatment patterns (main cohort)
 
 First-line type by stage, lines of therapy under three gap rules (60, 90 and 120 days), and summary measures. An assertion checks that the lines at the default 90-day gap equal the count in the dbt model.
@@ -117,6 +147,21 @@ for (st in STAGES) summ <- bind_rows(summ, tibble(measure = paste0("admin_dates_
 write_csv(summ |> mutate(value = as.numeric(value)), "results/treatment_patterns_summary.csv")
 ```
 
+## Chart: lines of therapy under three gap rules
+
+How many treated patients start a second or third line if a new line begins after a gap of 60, 90 or 120 days. The result is insensitive to the rule because gaps are short.
+
+```{r chart-lines-gap, fig.width = 7, fig.height = 3.8}
+bg <- by_gap |> select(gap_days, `Second line or later` = patients_with_line2, `Third line or later` = patients_with_3plus_lines) |>
+  tidyr::pivot_longer(-gap_days, names_to = "measure", values_to = "patients")
+ggplot(bg, aes(factor(gap_days), patients, fill = measure)) +
+  geom_col(position = position_dodge(0.8), width = 0.7) +
+  geom_text(aes(label = patients), position = position_dodge(0.8), vjust = -0.4, size = 3.3) +
+  scale_fill_manual(NULL, values = c("Second line or later" = "#1f5fa8", "Third line or later" = "grey55")) +
+  labs(x = "Gap that starts a new line (days)", y = "Patients") +
+  theme_minimal() + theme(legend.position = "bottom", panel.grid.minor = element_blank())
+```
+
 ## OHDSI Data Quality Dashboard (optional)
 
 Summarises the dashboard's JSON results into counts by category and status, and lists the failed checks with a likely cause. Skipped unless `DQD_JSON` points to the file.
@@ -150,6 +195,21 @@ if (nzchar(dqd_path) && file.exists(dqd_path)) {
 } else cat("DQD_JSON not set or not found: the committed results/dqd_*.csv files are left unchanged.\n")
 dbDisconnect(con)
 cat("Report inputs written to results/.\n")
+```
+
+## Chart: Data Quality Dashboard results by category
+
+Counts of checks by category and status, from the committed `results/dqd_summary.csv`. Most of what does not pass is 'not applicable' (checks on tables the ETL leaves empty).
+
+```{r chart-dqd, fig.width = 7, fig.height = 3.2}
+dq <- read_csv("results/dqd_summary.csv", show_col_types = FALSE) |>
+  tidyr::pivot_longer(-c(category, total), names_to = "status", values_to = "n") |>
+  mutate(status = factor(status, c("passed", "failed", "errored", "not applicable")))
+ggplot(dq, aes(category, n, fill = status)) +
+  geom_col(width = 0.7) + coord_flip() +
+  scale_fill_manual(NULL, values = c(passed = "#2a9d8f", failed = "#d1495b", errored = "#e9c46a", `not applicable` = "grey75")) +
+  labs(x = NULL, y = "Checks") +
+  theme_minimal() + theme(legend.position = "bottom", panel.grid.minor = element_blank())
 ```
 
 ## Session information

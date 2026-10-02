@@ -13,7 +13,7 @@ output:
 # means every relative path below (".Renviron", "results/", "seer/", "figures/") works exactly as in the .R scripts.
 knitr::opts_knit$set(root.dir = normalizePath(".."))
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, comment = "#>")
-
+suppressPackageStartupMessages(library(ggplot2))
 ```
 
 ## What this notebook does
@@ -110,6 +110,20 @@ ing_tab <- anti |> group_by(ingredient) |> summarise(patients = n_distinct(perso
   arrange(desc(patients)); print(as.data.frame(ing_tab), row.names = FALSE)
 ```
 
+## Chart: anticancer ingredients received
+
+How many of the cohort received each antineoplastic or endocrine anticancer ingredient. Cisplatin and paclitaxel (the NSCLC-directed agents) are given to almost everyone; the other ingredients belong to other cancers in the patients' synthetic histories.
+
+```{r chart-ingredients, fig.width = 7, fig.height = 3.5}
+ggplot(ing_tab, aes(reorder(ingredient, patients), patients)) +
+  geom_col(fill = "#1f5fa8") +
+  geom_text(aes(label = patients), hjust = -0.15, size = 3.2) +
+  coord_flip() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.12))) +
+  labs(x = NULL, y = sprintf("Patients (of %d)", N)) +
+  theme_minimal() + theme(panel.grid.minor = element_blank())
+```
+
 ## Per-patient treatment summaries
 
 One row per patient: first systemic treatment, number of administration dates, first chemoradiation procedure, and time to first treatment.
@@ -148,6 +162,18 @@ cat("first treatment of any kind (systemic or combined chemoradiation procedure)
 cat(sprintf("Patients whose first treatment is dated BEFORE the index date: %d\n", sum(per$days_to_first_tx < 0, na.rm = TRUE)))
 ```
 
+## Chart: days from diagnosis to first systemic treatment
+
+Distribution of the delay between the NSCLC diagnosis and the first cisplatin or paclitaxel administration, by stage.
+
+```{r chart-time-to-treatment, fig.width = 8, fig.height = 3.8}
+ggplot(per |> filter(!is.na(days_to_sys)), aes(days_to_sys)) +
+  geom_histogram(bins = 30, fill = "#1f5fa8", colour = "white") +
+  facet_wrap(~ stage, nrow = 1, labeller = labeller(stage = function(x) paste("Stage", x))) +
+  labs(x = "Days from diagnosis to first systemic treatment", y = "Patients") +
+  theme_minimal() + theme(panel.grid.minor = element_blank())
+```
+
 ## 4. Regimens per patient
 
 A regimen is the set of anticancer ingredients given on the same date.
@@ -177,6 +203,20 @@ gp <- gaps |> group_by(person_id) |> summarise(max_gap = max(gap), any_gt28 = an
 cat(sprintf("patients with any gap > 28 days: %d (%.1f%% of treated); any gap > 90 days: %d (%.1f%%); largest gap %.0f days\n",
     sum(gp$any_gt28), 100 * mean(gp$any_gt28), sum(gp$any_gt90), 100 * mean(gp$any_gt90), max(gp$max_gap)))
 cat("gap histogram (days): "); print(table(cut(gaps$gap, c(-1, 0, 1, 7, 14, 28, 60, 90, 180, 365, Inf))))
+```
+
+## Chart: gaps between administrations
+
+Days between consecutive administration dates (log scale). The dashed lines mark the 28-day and 90-day thresholds used in the line-of-therapy rules. Most gaps are short; very few exceed 90 days, which is why very few patients reach a second line.
+
+```{r chart-gaps, fig.width = 8, fig.height = 3.8}
+ggplot(gaps, aes(gap)) +
+  geom_histogram(bins = 40, fill = "#1f5fa8", colour = "white") +
+  geom_vline(xintercept = c(28, 90), linetype = 2) +
+  annotate("text", x = c(28, 90), y = Inf, label = c("28 days", "90 days"), vjust = 1.5, hjust = -0.1, size = 3.3) +
+  scale_x_log10() +
+  labs(x = "Days between consecutive administrations (log scale)", y = "Gaps") +
+  theme_minimal() + theme(panel.grid.minor = element_blank())
 ```
 
 ## 6. Line-2 candidates under the planned rules
@@ -228,6 +268,19 @@ cat("treatment intensity, if everyone is treated alike: administrations (dates) 
 print(as.data.frame(per |> group_by(stage) |> summarise(median_dates = median(n_dates, na.rm = TRUE), q1 = quantile(n_dates, .25, na.rm = TRUE), q3 = quantile(n_dates, .75, na.rm = TRUE),
         median_span_days = median(span_days, na.rm = TRUE), pct_died = round(100 * mean(event), 0))), row.names = FALSE)
 dbDisconnect(con)
+```
+
+## Chart: first-line type by stage
+
+Proportion of each stage in each first-line group. Almost the whole cohort sits in one group in every stage, so there is no treatment contrast to analyse.
+
+```{r chart-first-line, fig.width = 7, fig.height = 4}
+ggplot(per, aes(stage, fill = first_line)) +
+  geom_bar(position = "fill", width = 0.7) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_viridis_d(name = "First line", end = 0.85) +
+  labs(x = "Stage", y = "Share of patients") +
+  theme_minimal() + theme(panel.grid.minor = element_blank())
 ```
 
 ## Session information

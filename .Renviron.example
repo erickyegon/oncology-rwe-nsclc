@@ -16,3 +16,5 @@ SYNTHEA_JAR=synthea/synthea-with-dependencies.jar
 SYNTHEA_OUT=synthea/output
 # Optional: full path to psql if it is not on PATH
 PSQL_BIN=
+# Optional: path to the local OHDSI Data Quality Dashboard results JSON (used by analysis/report_inputs.R and notebooks/08_report_inputs.Rmd)
+# DQD_JSON=

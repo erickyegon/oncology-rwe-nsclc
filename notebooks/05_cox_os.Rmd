@@ -13,7 +13,7 @@ output:
 # means every relative path below (".Renviron", "results/", "seer/", "figures/") works exactly as in the .R scripts.
 knitr::opts_knit$set(root.dir = normalizePath(".."))
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, comment = "#>")
-
+suppressPackageStartupMessages(library(ggplot2))
 ```
 
 ## What this notebook does
@@ -99,6 +99,41 @@ cat("\n==== HAZARD RATIOS (95% CI); reference: stage I, female ====\n")
 print(transform(hr, hr = signif(hr, 4), lcl = signif(lcl, 4), ucl = signif(ucl, 4), p = signif(p, 3)), row.names = FALSE)
 cat(sprintf("\nConcordance: main %.3f (se %.3f); excluding prior_other_cancer %.3f (se %.3f)\n", concordance(main$fit)$concordance, sqrt(concordance(main$fit)$var),
             concordance(sens$fit)$concordance, sqrt(concordance(sens$fit)$var)))
+```
+
+## Chart: hazard ratios (forest plot)
+
+Hazard ratios on a log scale, main cohort and the sensitivity analysis excluding prior other cancers. The dashed line is a hazard ratio of 1 (no effect). The stage hazard ratios are enormous because the stage curves hardly overlap; age and sex sit on the line.
+
+```{r chart-forest, fig.width = 8, fig.height = 4.2}
+labs_term <- c("stageII" = "Stage II (vs I)", "stageIII" = "Stage III (vs I)", "stageIV" = "Stage IV (vs I)",
+               "age_at_dx (per 10 years)" = "Age (per 10 years)", "sexM" = "Male (vs female)")
+fp <- hr |> filter(term %in% names(labs_term)) |>
+  mutate(term = factor(labs_term[term], levels = rev(unname(labs_term))))
+ggplot(fp, aes(hr, term, colour = model)) +
+  geom_vline(xintercept = 1, linetype = 2, colour = "grey50") +
+  geom_pointrange(aes(xmin = lcl, xmax = ucl), position = position_dodge(width = 0.5)) +
+  scale_x_log10(breaks = c(0.5, 1, 2, 5, 20, 100, 1000, 10000),
+                labels = scales::label_number(big.mark = ",", drop0trailing = TRUE)) +
+  scale_colour_manual(NULL, values = c("main" = "#1f5fa8", "excluding prior_other_cancer" = "grey40")) +
+  labs(x = "Hazard ratio (log scale), 95% CI", y = NULL) +
+  theme_minimal() + theme(legend.position = "bottom", panel.grid.minor = element_blank())
+```
+
+## Chart: a visual check of proportional hazards
+
+If hazards were proportional, the curves of log(-log S) against log(time) would be parallel. Here they are steep, converge and sit far apart: the assumption fails, as the test says. (Stage curves that have reached zero have no log(-log S) and are cut off.)
+
+```{r chart-cloglog, fig.width = 8, fig.height = 4.5}
+km_all <- survfit(Surv(followup_months, event) ~ stage, data = main$d)
+sm <- summary(km_all, censored = FALSE)
+cl <- tibble(stage = sub("stage=", "", as.character(sm$strata)), t = sm$time, S = sm$surv) |>
+  filter(S > 0, S < 1, t > 0) |> mutate(cloglog = log(-log(S)))
+ggplot(cl, aes(log(t), cloglog, colour = stage)) +
+  geom_step(linewidth = 0.8) +
+  scale_colour_viridis_d(name = "Stage", end = 0.9) +
+  labs(x = "log(months since diagnosis)", y = "log(-log S(t))") +
+  theme_minimal() + theme(panel.grid.minor = element_blank())
 ```
 
 ## Schoenfeld residual plots

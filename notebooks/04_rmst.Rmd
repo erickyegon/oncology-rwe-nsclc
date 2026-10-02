@@ -14,6 +14,7 @@ output:
 knitr::opts_knit$set(root.dir = normalizePath(".."))
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, comment = "#>")
 has_seer_export <- file.exists(file.path(normalizePath(".."), "seer", "nsclc_survival_by_stage_2010-2015.csv"))
+suppressPackageStartupMessages(library(ggplot2))
 ```
 
 ## What this notebook does
@@ -115,6 +116,50 @@ write_csv(out, "results/rmst_synthea_vs_seer.csv")
 cat(sprintf("RMST to %d months (months). Synthea: Kaplan-Meier, normal 95%% CI. SEER: area under the monthly observed-survival curve (trapezoid). difference = Synthea - SEER.\n\n", TAU))
 print(as.data.frame(out |> select(cohort, stage, synthea_n, synthea_rmst_ci, seer_rmst_months, difference_months)), row.names = FALSE)
 cat("\nCheck: the Synthea RMST equals the hand-integrated KM area in every stratum (asserted in the script).\n")
+```
+
+## Chart: RMST by stage, Synthea vs SEER
+
+RMST to 60 months (the maximum possible is 60). Stage I looks matched; stages II-IV are far apart. Error bars are the Synthea 95% interval.
+
+```{r chart-rmst-bars, eval = has_seer_export, fig.width = 8, fig.height = 4.5}
+rm_main <- out |> filter(cohort == "main") |> mutate(stage = factor(stage, STAGES))
+bars <- bind_rows(
+  rm_main |> transmute(stage, source = "Synthea", rmst = synthea_rmst_months, lo = synthea_ci_lo, hi = synthea_ci_hi),
+  rm_main |> transmute(stage, source = "SEER 17", rmst = seer_rmst_months, lo = NA_real_, hi = NA_real_))
+ggplot(bars, aes(stage, rmst, fill = source)) +
+  geom_col(position = position_dodge(0.8), width = 0.7) +
+  geom_errorbar(aes(ymin = lo, ymax = hi), position = position_dodge(0.8), width = 0.25, na.rm = TRUE) +
+  geom_text(aes(y = 1.5, label = sprintf("%.1f", rmst)), position = position_dodge(0.8), vjust = 0, colour = "white", size = 3.6) +
+  scale_fill_manual(NULL, values = c("Synthea" = "#1f5fa8", "SEER 17" = "#d1495b")) +
+  scale_y_continuous(limits = c(0, TAU), breaks = seq(0, TAU, 12)) +
+  labs(x = "Stage", y = "RMST to 60 months (months)") +
+  theme_minimal() + theme(legend.position = "bottom", panel.grid.minor = element_blank())
+```
+
+## Chart: same area, different shape (stage I)
+
+RMST is the area under the curve. For stage I the two areas are almost equal, even though the synthetic curve is above SEER early and far below it late. The areas are shaded; the numbers in the title come from the table above.
+
+```{r chart-rmst-area, eval = has_seer_export, fig.width = 8, fig.height = 4.5}
+d1 <- filter(cohorts$main, stage == "I")
+fit1 <- survfit(Surv(followup_months, event) ~ 1, data = d1)
+grid <- seq(0, TAU, by = 0.1)
+syn_curve <- tibble(t = grid, S = summary(fit1, times = grid, extend = TRUE)$surv)
+s1 <- life |> filter(stage == "I") |> arrange(month)
+seer_curve <- tibble(t = c(0, s1$month), S = c(1, s1$surv))
+r1 <- out |> filter(cohort == "main", stage == "I")
+ggplot() +
+  geom_area(data = syn_curve, aes(t, S), fill = "#1f5fa8", alpha = 0.25) +
+  geom_line(data = syn_curve, aes(t, S, colour = "Synthea"), linewidth = 1) +
+  geom_area(data = seer_curve, aes(t, S), fill = "#d1495b", alpha = 0.18) +
+  geom_line(data = seer_curve, aes(t, S, colour = "SEER 17"), linewidth = 1) +
+  scale_colour_manual(NULL, values = c("Synthea" = "#1f5fa8", "SEER 17" = "#d1495b")) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Months since diagnosis", y = "Survival",
+       title = sprintf("Stage I: RMST %.1f months (Synthea) vs %.1f months (SEER)", r1$synthea_rmst_months, r1$seer_rmst_months),
+       subtitle = "Shaded area under each curve to 60 months") +
+  theme_minimal() + theme(legend.position = "bottom", panel.grid.minor = element_blank())
 ```
 
 ## Session information

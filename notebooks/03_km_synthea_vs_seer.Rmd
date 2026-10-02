@@ -144,6 +144,23 @@ cat("\nCells with a note (see the 'note' column in the CSV):\n")
 print(as.data.frame(cmp |> filter(note != "") |> count(cohort, note)), row.names = FALSE)
 ```
 
+## Chart: where the gap opens, year by year
+
+Each segment joins the synthetic estimate (blue) to SEER's (red) at the same year. Stage I starts above SEER and ends far below it. Stages II-IV collapse to zero while SEER decays gradually.
+
+```{r chart-dumbbell, fig.width = 10, fig.height = 3.8}
+dumb <- cmp |> filter(cohort == "main")
+ggplot(dumb, aes(x = year)) +
+  geom_segment(aes(xend = year, y = synthea_S_pct, yend = seer_S_pct), colour = "grey70", linewidth = 0.8) +
+  geom_point(aes(y = synthea_S_pct, colour = "Synthea"), size = 3) +
+  geom_point(aes(y = seer_S_pct, colour = "SEER 17"), size = 3) +
+  facet_wrap(~ stage, nrow = 1, labeller = labeller(stage = function(x) paste("Stage", x))) +
+  scale_colour_manual(NULL, values = c("Synthea" = "#1f5fa8", "SEER 17" = "#d1495b")) +
+  scale_y_continuous(limits = c(0, 100), labels = function(x) paste0(x, "%")) +
+  labs(x = "Years since diagnosis", y = "Observed survival") +
+  theme_minimal() + theme(legend.position = "bottom", panel.grid.minor = element_blank())
+```
+
 ## Median survival, both sources
 
 Synthea's Kaplan-Meier median with its 95% interval, next to SEER's exact median observed survival.
@@ -202,6 +219,25 @@ cat("\n==== FOLLOW-UP BY STAGE (results/km_followup_by_stage.csv) ====\n")
 print(as.data.frame(fu), row.names = FALSE)
 cat("'median follow-up not estimable' = the reverse-KM median is not reached, because fewer than half of the cohort is\n")
 cat("censored (most patients are followed until death, so follow-up ends with the event, not with the study).\n")
+```
+
+## Chart: when do the synthetic patients die?
+
+A histogram of time to death for each stage. The shaded band is the death window the generator's lung cancer module writes for that stage
+(stage I 2-6 years, II 16-28 months, III 9-18 months, IV 6-10 months). Deaths fill each band: survival here is scripted, not observed.
+
+```{r chart-death-times, fig.width = 8, fig.height = 7}
+windows <- tibble::tribble(~stage, ~lo, ~hi, "I", 24, 72, "II", 16, 28, "III", 9, 18, "IV", 6, 10) |>
+  mutate(stage = factor(stage, STAGES))
+deaths <- mart |> filter(event == 1)
+ggplot(deaths, aes(followup_months)) +
+  geom_rect(data = windows, aes(xmin = lo, xmax = hi, ymin = -Inf, ymax = Inf), inherit.aes = FALSE, fill = "#1f5fa8", alpha = 0.12) +
+  geom_histogram(binwidth = 1, fill = "#1f5fa8", colour = "white") +
+  facet_wrap(~ stage, ncol = 1, scales = "free_y", labeller = labeller(stage = function(x) paste("Stage", x))) +
+  labs(x = "Months from diagnosis to death", y = "Patients",
+       title = "Deaths fall inside the scripted windows",
+       subtitle = "Shaded band = the death window written into the generator for that stage") +
+  theme_minimal() + theme(panel.grid.minor = element_blank())
 ```
 
 ## Age and sex mix by stage
@@ -282,6 +318,23 @@ p <- ggplot() +
   theme(legend.position = "bottom", panel.grid.minor = element_blank(), plot.caption = element_text(size = 8, colour = "grey35"))
 ggsave("figures/km_synthea_vs_seer.png", p, width = 10, height = 6, dpi = 200, bg = "white")
 cat("\nFigure saved: figures/km_synthea_vs_seer.png\n")
+```
+
+## Chart: all four stages on one axis
+
+The four synthetic curves on a single panel (lines) with SEER's estimates (open circles), coloured by stage. It makes the near-perfect separation by stage in the synthetic data obvious: the curves barely overlap, whereas SEER's points spread out much more gradually.
+
+```{r chart-overlay, fig.width = 8, fig.height = 5}
+ggplot(km_steps, aes(t, S, colour = stage)) +
+  geom_path(linewidth = 0.9) +
+  geom_point(data = seer_pts, shape = 21, fill = "white", size = 2.6, stroke = 1) +
+  scale_colour_viridis_d(name = "Stage", end = 0.9) +
+  scale_x_continuous(breaks = 0:6) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Years since diagnosis", y = "Observed survival",
+       title = "Synthetic survival is ordered by stage almost perfectly",
+       subtitle = "Lines: Synthea Kaplan-Meier. Open circles: SEER 17 observed survival at years 1-5.") +
+  theme_minimal() + theme(panel.grid.minor = element_blank())
 ```
 
 ![](../figures/km_synthea_vs_seer.png)
