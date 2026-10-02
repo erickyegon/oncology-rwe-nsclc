@@ -1,0 +1,9 @@
+cohort,stage,n,deaths,pct_followed_to_death,max_followup_months,median_followup
+main,I,292,263,90.1,72,not estimable
+main,II,109,101,92.7,27.7,not estimable
+main,III,261,255,97.7,18,not estimable
+main,IV,685,672,98.1,10.1,not estimable
+sensitivity,I,66,66,100,72,not estimable
+sensitivity,II,28,28,100,27.4,not estimable
+sensitivity,III,56,56,100,17.4,not estimable
+sensitivity,IV,155,155,100,10,not estimable

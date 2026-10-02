@@ -1,0 +1,41 @@
+cohort,stage,year,months,synthea_n_at_risk,synthea_S_pct,synthea_ci_lo_pct,synthea_ci_hi_pct,synthea_S_ci,seer_n_at_risk,seer_S_pct,seer_se_pct,seer_ci_lo_pct,seer_ci_hi_pct,seer_S_ci,diff_pp,seer_outside_synthea_ci,note
+main,I,1,12,278,97.2,94.5,98.6,97.2 (94.5-98.6),27592,86.2,0.2,85.8,86.6,86.2 (85.8-86.6),11,TRUE,
+main,I,2,24,258,93.7,90.1,96,93.7 (90.1-96.0),24074,75.3,0.2,74.9,75.8,75.3 (74.9-75.8),18.4,TRUE,
+main,I,3,36,169,64.3,58.3,69.7,64.3 (58.3-69.7),21095,66.1,0.3,65.6,66.6,66.1 (65.6-66.6),-1.8,FALSE,
+main,I,4,48,108,41.4,35.4,47.3,41.4 (35.4-47.3),18818,59.1,0.3,58.5,59.6,59.1 (58.5-59.6),-17.7,TRUE,
+main,I,5,60,47,18.2,13.8,23.1,18.2 (13.8-23.1),16859,53,0.3,52.5,53.6,53.0 (52.5-53.6),-34.8,TRUE,
+main,II,1,12,100,99,93.2,99.9,99.0 (93.2-99.9),9471,70.5,0.4,69.7,71.3,70.5 (69.7-71.3),28.5,TRUE,
+main,II,2,24,32,31.7,22.9,40.8,31.7 (22.9-40.8),7321,54.6,0.4,53.8,55.4,54.6 (53.8-55.4),-22.9,TRUE,
+main,II,3,36,0,0,0,0,0.0 (0.0-0.0),5995,44.8,0.4,43.9,45.6,44.8 (43.9-45.6),-44.8,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+main,II,4,48,0,0,0,0,0.0 (0.0-0.0),5103,38.2,0.4,37.3,39,38.2 (37.3-39.0),-38.2,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+main,II,5,60,0,0,0,0,0.0 (0.0-0.0),4442,33.3,0.4,32.5,34.1,33.3 (32.5-34.1),-33.3,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+main,III,1,12,154,59.7,53.4,65.4,59.7 (53.4-65.4),17222,54.4,0.3,53.8,54.9,54.4 (53.8-54.9),5.3,FALSE,
+main,III,2,24,0,0,0,0,0.0 (0.0-0.0),11151,35.3,0.3,34.8,35.8,35.3 (34.8-35.8),-35.3,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+main,III,3,36,0,0,0,0,0.0 (0.0-0.0),8250,26.2,0.2,25.7,26.7,26.2 (25.7-26.7),-26.2,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+main,III,4,48,0,0,0,0,0.0 (0.0-0.0),6589,21,0.2,20.5,21.4,21.0 (20.5-21.4),-21,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+main,III,5,60,0,0,0,0,0.0 (0.0-0.0),5457,17.4,0.2,17,17.8,17.4 (17.0-17.8),-17.4,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+main,IV,1,12,0,0,0,0,0.0 (0.0-0.0),20582,25,0.2,24.7,25.3,25.0 (24.7-25.3),-25,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+main,IV,2,24,0,0,0,0,0.0 (0.0-0.0),10155,12.4,0.1,12.2,12.6,12.4 (12.2-12.6),-12.4,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+main,IV,3,36,0,0,0,0,0.0 (0.0-0.0),6251,7.7,0.1,7.5,7.8,7.7 (7.5-7.8),-7.7,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+main,IV,4,48,0,0,0,0,0.0 (0.0-0.0),4371,5.4,0.1,5.2,5.5,5.4 (5.2-5.5),-5.4,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+main,IV,5,60,0,0,0,0,0.0 (0.0-0.0),3284,4.1,0.1,3.9,4.2,4.1 (3.9-4.2),-4.1,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+sensitivity,I,1,12,65,98.5,89.7,99.8,98.5 (89.7-99.8),27592,86.2,0.2,85.8,86.6,86.2 (85.8-86.6),12.3,TRUE,
+sensitivity,I,2,24,64,97,88.4,99.2,97.0 (88.4-99.2),24074,75.3,0.2,74.9,75.8,75.3 (74.9-75.8),21.7,TRUE,
+sensitivity,I,3,36,47,71.2,58.7,80.6,71.2 (58.7-80.6),21095,66.1,0.3,65.6,66.6,66.1 (65.6-66.6),5.1,FALSE,
+sensitivity,I,4,48,33,50,37.5,61.3,50.0 (37.5-61.3),18818,59.1,0.3,58.5,59.6,59.1 (58.5-59.6),-9.1,FALSE,
+sensitivity,I,5,60,17,25.8,16,36.7,25.8 (16.0-36.7),16859,53,0.3,52.5,53.6,53.0 (52.5-53.6),-27.2,TRUE,
+sensitivity,II,1,12,28,100,100,100,100.0 (100.0-100.0),9471,70.5,0.4,69.7,71.3,70.5 (69.7-71.3),29.5,TRUE,
+sensitivity,II,2,24,7,25,11.1,41.8,25.0 (11.1-41.8),7321,54.6,0.4,53.8,55.4,54.6 (53.8-55.4),-29.6,TRUE,
+sensitivity,II,3,36,0,0,0,0,0.0 (0.0-0.0),5995,44.8,0.4,43.9,45.6,44.8 (43.9-45.6),-44.8,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+sensitivity,II,4,48,0,0,0,0,0.0 (0.0-0.0),5103,38.2,0.4,37.3,39,38.2 (37.3-39.0),-38.2,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+sensitivity,II,5,60,0,0,0,0,0.0 (0.0-0.0),4442,33.3,0.4,32.5,34.1,33.3 (32.5-34.1),-33.3,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+sensitivity,III,1,12,35,62.5,48.5,73.7,62.5 (48.5-73.7),17222,54.4,0.3,53.8,54.9,54.4 (53.8-54.9),8.1,FALSE,
+sensitivity,III,2,24,0,0,0,0,0.0 (0.0-0.0),11151,35.3,0.3,34.8,35.8,35.3 (34.8-35.8),-35.3,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+sensitivity,III,3,36,0,0,0,0,0.0 (0.0-0.0),8250,26.2,0.2,25.7,26.7,26.2 (25.7-26.7),-26.2,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+sensitivity,III,4,48,0,0,0,0,0.0 (0.0-0.0),6589,21,0.2,20.5,21.4,21.0 (20.5-21.4),-21,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+sensitivity,III,5,60,0,0,0,0,0.0 (0.0-0.0),5457,17.4,0.2,17,17.8,17.4 (17.0-17.8),-17.4,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+sensitivity,IV,1,12,0,0,0,0,0.0 (0.0-0.0),20582,25,0.2,24.7,25.3,25.0 (24.7-25.3),-25,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+sensitivity,IV,2,24,0,0,0,0,0.0 (0.0-0.0),10155,12.4,0.1,12.2,12.6,12.4 (12.2-12.6),-12.4,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+sensitivity,IV,3,36,0,0,0,0,0.0 (0.0-0.0),6251,7.7,0.1,7.5,7.8,7.7 (7.5-7.8),-7.7,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+sensitivity,IV,4,48,0,0,0,0,0.0 (0.0-0.0),4371,5.4,0.1,5.2,5.5,5.4 (5.2-5.5),-5.4,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)
+sensitivity,IV,5,60,0,0,0,0,0.0 (0.0-0.0),3284,4.1,0.1,3.9,4.2,4.1 (3.9-4.2),-4.1,TRUE,S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0)

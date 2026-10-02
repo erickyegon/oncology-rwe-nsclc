@@ -1,0 +1,111 @@
+==== COHORTS ====
+main         n = 1347, deaths = 1291, censored = 56, max follow-up = 72.0 months
+ stage   n  pct
+     I 292 21.7
+    II 109  8.1
+   III 261 19.4
+    IV 685 50.9
+sensitivity  n = 305, deaths = 305, censored = 0, max follow-up = 72.0 months
+ stage   n  pct
+     I  66 21.6
+    II  28  9.2
+   III  56 18.4
+    IV 155 50.8
+
+Rule: S(t) comes from summary(fit, times = c(12, 24, 36, 48, 60), extend = TRUE). If nobody is at risk at t and the curve has already reached 0 (it ends on a death), S(t) = 0 with n at risk = 0 (CI shown as 0-0). A cell is left blank only if nobody is at risk at t and the curve ends on a censoring (S > 0 at its last observation), where survival at t is not estimable.
+
+==== COMPARISON TABLE (results/km_synthea_vs_seer.csv) ====
+S(t) in %, with 95% log-log CI. SEER values and CIs are SEER*Stat's own exported estimates. diff = Synthea - SEER, percentage points.
+      cohort stage year synthea_n_at_risk        synthea_S_ci seer_n_at_risk        seer_S_ci diff_pp seer_outside_synthea_ci
+        main     I    1               278    97.2 (94.5-98.6)          27592 86.2 (85.8-86.6)    11.0                    TRUE
+        main     I    2               258    93.7 (90.1-96.0)          24074 75.3 (74.9-75.8)    18.4                    TRUE
+        main     I    3               169    64.3 (58.3-69.7)          21095 66.1 (65.6-66.6)    -1.8                   FALSE
+        main     I    4               108    41.4 (35.4-47.3)          18818 59.1 (58.5-59.6)   -17.7                    TRUE
+        main     I    5                47    18.2 (13.8-23.1)          16859 53.0 (52.5-53.6)   -34.8                    TRUE
+        main    II    1               100    99.0 (93.2-99.9)           9471 70.5 (69.7-71.3)    28.5                    TRUE
+        main    II    2                32    31.7 (22.9-40.8)           7321 54.6 (53.8-55.4)   -22.9                    TRUE
+        main    II    3                 0       0.0 (0.0-0.0)           5995 44.8 (43.9-45.6)   -44.8                    TRUE
+        main    II    4                 0       0.0 (0.0-0.0)           5103 38.2 (37.3-39.0)   -38.2                    TRUE
+        main    II    5                 0       0.0 (0.0-0.0)           4442 33.3 (32.5-34.1)   -33.3                    TRUE
+        main   III    1               154    59.7 (53.4-65.4)          17222 54.4 (53.8-54.9)     5.3                   FALSE
+        main   III    2                 0       0.0 (0.0-0.0)          11151 35.3 (34.8-35.8)   -35.3                    TRUE
+        main   III    3                 0       0.0 (0.0-0.0)           8250 26.2 (25.7-26.7)   -26.2                    TRUE
+        main   III    4                 0       0.0 (0.0-0.0)           6589 21.0 (20.5-21.4)   -21.0                    TRUE
+        main   III    5                 0       0.0 (0.0-0.0)           5457 17.4 (17.0-17.8)   -17.4                    TRUE
+        main    IV    1                 0       0.0 (0.0-0.0)          20582 25.0 (24.7-25.3)   -25.0                    TRUE
+        main    IV    2                 0       0.0 (0.0-0.0)          10155 12.4 (12.2-12.6)   -12.4                    TRUE
+        main    IV    3                 0       0.0 (0.0-0.0)           6251    7.7 (7.5-7.8)    -7.7                    TRUE
+        main    IV    4                 0       0.0 (0.0-0.0)           4371    5.4 (5.2-5.5)    -5.4                    TRUE
+        main    IV    5                 0       0.0 (0.0-0.0)           3284    4.1 (3.9-4.2)    -4.1                    TRUE
+ sensitivity     I    1                65    98.5 (89.7-99.8)          27592 86.2 (85.8-86.6)    12.3                    TRUE
+ sensitivity     I    2                64    97.0 (88.4-99.2)          24074 75.3 (74.9-75.8)    21.7                    TRUE
+ sensitivity     I    3                47    71.2 (58.7-80.6)          21095 66.1 (65.6-66.6)     5.1                   FALSE
+ sensitivity     I    4                33    50.0 (37.5-61.3)          18818 59.1 (58.5-59.6)    -9.1                   FALSE
+ sensitivity     I    5                17    25.8 (16.0-36.7)          16859 53.0 (52.5-53.6)   -27.2                    TRUE
+ sensitivity    II    1                28 100.0 (100.0-100.0)           9471 70.5 (69.7-71.3)    29.5                    TRUE
+ sensitivity    II    2                 7    25.0 (11.1-41.8)           7321 54.6 (53.8-55.4)   -29.6                    TRUE
+ sensitivity    II    3                 0       0.0 (0.0-0.0)           5995 44.8 (43.9-45.6)   -44.8                    TRUE
+ sensitivity    II    4                 0       0.0 (0.0-0.0)           5103 38.2 (37.3-39.0)   -38.2                    TRUE
+ sensitivity    II    5                 0       0.0 (0.0-0.0)           4442 33.3 (32.5-34.1)   -33.3                    TRUE
+ sensitivity   III    1                35    62.5 (48.5-73.7)          17222 54.4 (53.8-54.9)     8.1                   FALSE
+ sensitivity   III    2                 0       0.0 (0.0-0.0)          11151 35.3 (34.8-35.8)   -35.3                    TRUE
+ sensitivity   III    3                 0       0.0 (0.0-0.0)           8250 26.2 (25.7-26.7)   -26.2                    TRUE
+ sensitivity   III    4                 0       0.0 (0.0-0.0)           6589 21.0 (20.5-21.4)   -21.0                    TRUE
+ sensitivity   III    5                 0       0.0 (0.0-0.0)           5457 17.4 (17.0-17.8)   -17.4                    TRUE
+ sensitivity    IV    1                 0       0.0 (0.0-0.0)          20582 25.0 (24.7-25.3)   -25.0                    TRUE
+ sensitivity    IV    2                 0       0.0 (0.0-0.0)          10155 12.4 (12.2-12.6)   -12.4                    TRUE
+ sensitivity    IV    3                 0       0.0 (0.0-0.0)           6251    7.7 (7.5-7.8)    -7.7                    TRUE
+ sensitivity    IV    4                 0       0.0 (0.0-0.0)           4371    5.4 (5.2-5.5)    -5.4                    TRUE
+ sensitivity    IV    5                 0       0.0 (0.0-0.0)           3284    4.1 (3.9-4.2)    -4.1                    TRUE
+
+Cells with a note (see the 'note' column in the CSV):
+      cohort                                                                       note  n
+        main S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0) 12
+ sensitivity S = 0: the curve ended on a death before this time (n at risk = 0; CI 0-0) 12
+
+==== MEDIAN SURVIVAL (months; results/km_median_survival_by_stage.csv) ====
+Synthea: KM median with 95% log-log CI. SEER: exact median observed survival from the SEER*Stat export (first month with cumulative survival <= 50%).
+      cohort stage synthea_n synthea_events synthea_median_months synthea_median_lcl synthea_median_ucl seer_median_months
+        main     I       292            263                  43.8               41.3               47.0                 67
+        main    II       109            101                  21.4               20.6               22.9                 29
+        main   III       261            255                  13.2               12.5               14.0                 14
+        main    IV       685            672                   8.0                7.9                8.2                  5
+ sensitivity     I        66             66                  47.8               42.1               53.8                 67
+ sensitivity    II        28             28                  20.7               18.9               23.4                 29
+ sensitivity   III        56             56                  13.2               12.0               14.5                 14
+ sensitivity    IV       155            155                   8.2                7.8                8.4                  5
+
+==== LOG-RANK TEST ACROSS STAGES (Synthea) ====
+main         chi-square = 1792.8 on 3 df, p = <1e-16
+sensitivity  chi-square = 430.0 on 3 df, p = <1e-16
+
+==== FOLLOW-UP BY STAGE (results/km_followup_by_stage.csv) ====
+      cohort stage   n deaths pct_followed_to_death max_followup_months median_followup
+        main     I 292    263                  90.1                72.0   not estimable
+        main    II 109    101                  92.7                27.7   not estimable
+        main   III 261    255                  97.7                18.0   not estimable
+        main    IV 685    672                  98.1                10.1   not estimable
+ sensitivity     I  66     66                 100.0                72.0   not estimable
+ sensitivity    II  28     28                 100.0                27.4   not estimable
+ sensitivity   III  56     56                 100.0                17.4   not estimable
+ sensitivity    IV 155    155                 100.0                10.0   not estimable
+'median follow-up not estimable' = the reverse-KM median is not reached, because fewer than half of the cohort is
+censored (most patients are followed until death, so follow-up ends with the event, not with the study).
+
+==== AGE AND SEX BY STAGE (Synthea; age at diagnosis in years) ====
+      cohort stage    n deaths male_n male_pct age_mean age_sd age_median age_q1 age_q3
+        main     I  292    263    230     78.8     63.9    8.7       64.1   56.1   69.9
+        main    II  109    101     80     73.4     64.0    8.8       64.4   56.7   69.4
+        main   III  261    255    197     75.5     63.0    8.4       63.0   55.9   68.8
+        main    IV  685    672    525     76.6     63.5    8.6       63.7   56.1   69.2
+        main   All 1347   1291   1032     76.6     63.5    8.6       63.7   56.0   69.4
+ sensitivity     I   66     66     58     87.9     66.5    6.8       67.2   63.3   71.7
+ sensitivity    II   28     28     22     78.6     63.3    7.4       65.3   57.9   69.1
+ sensitivity   III   56     56     48     85.7     65.4    7.6       65.4   60.3   72.5
+ sensitivity    IV  155    155    121     78.1     66.4    7.2       67.8   61.3   71.6
+ sensitivity   All  305    305    249     81.6     65.9    7.2       67.0   60.7   71.6
+
+Age by stage, one-way ANOVA (main cohort): F = 0.63, p = 0.595
+Sex by stage, chi-square test (main cohort): X2 = 1.57 on 3 df, p = 0.665
+
+Figure saved: figures/km_synthea_vs_seer.png
