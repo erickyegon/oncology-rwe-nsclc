@@ -3,25 +3,139 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How realistic is synthetic oncology EHR data?</title>
+<title>Synthetic vs Real NSCLC Survival</title>
+<meta name="description" content="An oncology real-world evidence pipeline on synthetic EHR data (Synthea, OMOP CDM, dbt, R), benchmarked against 172,582 SEER registry patients.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: #222; background: #fff; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; }
-  h1 { font-size: 1.8rem; line-height: 1.25; margin-bottom: 0.25rem; }
-  .author { color: #555; margin-top: 0; }
-  ul { padding-left: 1.2rem; }
-  li { margin: 0.4rem 0; }
-  a { color: #0b5cad; }
-  @media (prefers-color-scheme: dark) { body { background: #151515; color: #e6e6e6; } .author { color: #aaa; } a { color: #7db7f0; } }
+:root{
+  --bg:#FFFFFF; --ink:#0F1B2A; --muted:#4A5868; --line:#DCE2E8; --panel:#F4F6F8;
+  --seer:#C2410C; --syn:#1F5FA8; --link:#1F5FA8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1B2A; --ink:#EEF2F6; --muted:#AEB9C6; --line:#2C3B4E; --panel:#16263A;
+    --seer:#F08A3C; --syn:#6FA8E8; --link:#8CBCF2;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1B2A; --ink:#EEF2F6; --muted:#AEB9C6; --line:#2C3B4E; --panel:#16263A;
+  --seer:#F08A3C; --syn:#6FA8E8; --link:#8CBCF2;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "IBM Plex Sans",system-ui,sans-serif}
+a{color:var(--link)} a:hover{text-decoration-thickness:2px}
+.wrap{max-width:960px;margin:0 auto;padding:56px 24px 64px}
+.kicker{font:500 13px/1.4 "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--seer);margin:0 0 14px}
+h1{font:600 clamp(34px,5.4vw,56px)/1.08 "Source Serif 4",Georgia,serif;margin:0 0 18px;letter-spacing:-.01em}
+.lede{font-size:20px;color:var(--muted);max-width:760px;margin:0 0 22px}
+.byline{font-size:15px;color:var(--muted);margin:0 0 30px}
+.byline strong{color:var(--ink);font-weight:600}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 48px}
+.btn{display:inline-block;padding:11px 18px;border:1px solid var(--line);border-radius:6px;text-decoration:none;font-weight:500;color:var(--ink);min-height:44px}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:hover{border-color:var(--ink)}
+h2{font:600 26px/1.25 "Source Serif 4",Georgia,serif;margin:56px 0 18px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.stat{background:var(--panel);border-radius:8px;padding:22px 20px}
+.stat .num{font:600 30px/1.15 "Source Serif 4",Georgia,serif;margin:0 0 8px}
+.stat .num .vs{font-size:18px;color:var(--muted);font-weight:400}
+.stat p{margin:0;font-size:15px;color:var(--muted)}
+.seer{color:var(--seer)} .syn{color:var(--syn)}
+figure{margin:0}
+figure img{width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:#fff}
+figcaption{font-size:14px;color:var(--muted);margin-top:10px}
+.pipeline{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font:500 15px/1.4 "IBM Plex Mono",monospace;margin:0 0 18px}
+.pipeline span.step{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:7px 11px}
+.pipeline span.arrow{color:var(--muted)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}
+.two h3{font:600 17px/1.4 "IBM Plex Sans",sans-serif;margin:0 0 6px}
+.two p{margin:0;color:var(--muted);font-size:16px}
+ul.plain{padding-left:20px;margin:0;color:var(--muted)}
+ul.plain li{margin:0 0 8px}
+.note{font-size:14px;color:var(--muted);border-top:1px solid var(--line);margin-top:56px;padding-top:22px}
+.note p{margin:0 0 10px}
+@media (max-width:720px){
+  .wrap{padding:36px 16px 48px}
+  .stats,.two{grid-template-columns:minmax(0,1fr)}
+  .lede{font-size:18px}
+}
 </style>
 </head>
 <body>
-<h1>How realistic is synthetic oncology EHR data?</h1>
-<p class="author">Erick Kiprotich Yegon</p>
-<p>Synthea's synthetic lung cancer records, loaded into OMOP and analysed in R, rank the stages correctly and match some summary statistics, but their survival curves do not match SEER registry data.</p>
-<ul>
-  <li><a href="report.html">Full study report</a></li>
-  <li><a href="one_page_summary.pdf">One-page summary (PDF)</a></li>
-  <li><a href="https://github.com/erickyegon/oncology-rwe-nsclc">Code on GitHub</a></li>
+<main class="wrap">
+
+<p class="kicker">Oncology real-world evidence · Synthetic vs real data</p>
+<h1>The medians matched. The survival curves didn’t.</h1>
+<p class="lede">How realistic is synthetic EHR data for oncology research? I built a lung cancer (NSCLC) survival pipeline on synthetic patient records and benchmarked it against 172,582 real U.S. patients from the SEER cancer registry.</p>
+<p class="byline"><strong>Erick Kiprotich Yegon</strong> · Epidemiologist and data scientist · <a href="https://linkedin.com/in/erickyegon">LinkedIn</a> · <a href="mailto:keyegon@gmail.com">keyegon@gmail.com</a></p>
+
+<div class="actions">
+  <a class="btn primary" href="report.html">Read the full study report</a>
+  <a class="btn" href="one_page_summary.pdf">One-page summary (PDF)</a>
+  <a class="btn" href="https://github.com/erickyegon/oncology-rwe-nsclc">Code on GitHub</a>
+  <a class="btn" href="https://medium.com/@keyegon/from-seer-stat-to-r-a-practical-guide-to-extracting-and-validating-cancer-survival-data-2601dd584b88">SEER*Stat-to-R guide (Medium)</a>
+</div>
+
+<h2>Key findings</h2>
+<div class="stats">
+  <div class="stat">
+    <div class="num"><span class="syn">13</span> <span class="vs">vs</span> <span class="seer">14</span> <span class="vs">months</span></div>
+    <p>Stage III median survival, synthetic vs real. On medians alone, the synthetic data looks realistic.</p>
+  </div>
+  <div class="stat">
+    <div class="num"><span class="syn">18%</span> <span class="vs">vs</span> <span class="seer">53%</span></div>
+    <p>Stage I five-year survival. For stages II–IV, synthetic survival is 0% at five years against 33%, 17% and 4% in SEER.</p>
+  </div>
+  <div class="stat">
+    <div class="num"><span class="syn">1,346</span> <span class="vs">of</span> 1,347</div>
+    <p>Synthetic patients received the same first-line treatment, so treatment effects cannot be studied at all.</p>
+  </div>
+</div>
+
+<h2>The evidence</h2>
+<figure>
+  <img src="https://raw.githubusercontent.com/erickyegon/oncology-rwe-nsclc/main/figures/km_synthea_vs_seer.png" alt="Kaplan–Meier survival by stage: synthetic cohort curves fall to zero within about two years for stages II to IV, while SEER observed survival points stay above zero through five years." loading="lazy">
+  <figcaption><span class="syn">Synthea</span> Kaplan–Meier curves (n = 1,347) against <span class="seer">SEER 17</span> observed survival at years 1–5 (NSCLC diagnosed 2010–2015, age 50+, n = 160,258 with known stage).</figcaption>
+</figure>
+
+<h2>What I did</h2>
+<div class="pipeline" aria-label="Pipeline">
+  <span class="step">Synthea</span><span class="arrow">→</span>
+  <span class="step">OMOP CDM 5.4</span><span class="arrow">→</span>
+  <span class="step">PostgreSQL</span><span class="arrow">→</span>
+  <span class="step">dbt (15 models, 25 tests)</span><span class="arrow">→</span>
+  <span class="step">R</span><span class="arrow">→</span>
+  <span class="step">SEER benchmark</span>
+</div>
+<ul class="plain">
+  <li>Harmonized synthetic EHR records into the OMOP Common Data Model and built the NSCLC cohort, lines of therapy and real-world endpoints as tested dbt models.</li>
+  <li>Compared survival with Kaplan–Meier, Cox models (with proportional-hazards tests) and restricted mean survival time, and reweighted to SEER’s age and sex mix.</li>
+  <li>Checked data quality with the OHDSI Data Quality Dashboard and source-to-target reconciliation.</li>
 </ul>
+
+<h2>Data issues found along the way</h2>
+<div class="two">
+  <div>
+    <h3>A stage bug in the simulator</h3>
+    <p>Unmodified Synthea put every lung cancer in stage I. Even after a first fix, a second module left half of them there. Both had to be patched before any comparison was possible.</p>
+  </div>
+  <div>
+    <h3>A vocabulary mapping error</h3>
+    <p>In the current OMOP vocabulary, the SNOMED code for stage III NSCLC also maps to small cell carcinoma. A cohort built on standard concepts would misclassify 312 patients. The standard data quality tool did not catch it.</p>
+  </div>
+</div>
+
+<h2>The lesson</h2>
+<p class="lede" style="margin:0">Validate full distributions, not summary statistics. Medians and restricted mean survival looked close for some stages; only the full curves showed the synthetic data cannot stand in for real-world outcomes. It is useful for testing a pipeline, not for benchmarking results.</p>
+
+<div class="note">
+  <p>All data are synthetic or public SEER aggregates; no real patient-level data and no Flatiron data are used. This is a methods demonstration, not clinical evidence.</p>
+  <p>I used AI assistants as tools for code and documentation; the study design, methods and interpretation are my own, and I verified all results.</p>
+</div>
+
+</main>
 </body>
 </html>
