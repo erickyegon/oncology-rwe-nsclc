@@ -1,0 +1,126 @@
+---
+title: "Restricted mean survival time to 60 months: Synthea vs SEER"
+subtitle: "Notebook 4. Source script: analysis/rmst.R"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include = FALSE}
+# The notebook lives in notebooks/, the project files live one level up. Pointing knitr at the repository root
+# means every relative path below (".Renviron", "results/", "seer/", "figures/") works exactly as in the .R scripts.
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, comment = "#>")
+has_seer_export <- file.exists(file.path(normalizePath(".."), "seer", "nsclc_survival_by_stage_2010-2015.csv"))
+```
+
+## What this notebook does
+
+Restricted mean survival time (RMST) is the **area under the survival curve** up to a fixed time, here 60 months. It summarises a whole curve in one number
+and does not need the proportional-hazards assumption.
+
+- **Synthea:** RMST from the Kaplan-Meier fit (`summary(survfit, rmean = 60)`) with a normal 95% interval. The notebook also integrates the step function by hand and
+  checks that the two agree.
+- **SEER:** the area under the monthly observed-survival curve (trapezoid rule over 60 one-month intervals, survival 100% at month 0).
+
+**Important:** the SEER monthly life-table export (`seer/nsclc_survival_by_stage_2010-2015.csv`) is **not in the repository** (SEER's data use agreement does not allow
+publishing small monthly counts). It is on your machine only. The notebook reads just its cumulative-survival column, and only the resulting RMST values are written.
+If the file is missing, the SEER part is skipped and the notebook says so.
+
+**Output:** `results/rmst_synthea_vs_seer.csv`.
+
+## Setup
+
+Packages and constants. `TAU` is the 60-month horizon.
+
+```{r}
+suppressPackageStartupMessages({ library(DBI); library(RPostgres); library(survival); library(dplyr); library(readr); library(stringr) })
+options(width = 120, digits = 5)
+TAU <- 60
+STAGES <- c("I", "II", "III", "IV")
+dir.create("results", showWarnings = FALSE)
+```
+
+## Synthea: load the cohort
+
+Main cohort and the 2010-2015 sensitivity cohort, straight from the dbt mart.
+
+```{r}
+if (!nzchar(Sys.getenv("PG_HOST"))) readRenviron(".Renviron")
+con <- dbConnect(Postgres(), host = Sys.getenv("PG_HOST"), port = as.integer(Sys.getenv("PG_PORT")),
+                 dbname = Sys.getenv("PG_DB"), user = Sys.getenv("PG_USER"), password = Sys.getenv("PG_PASSWORD"))
+mart <- dbGetQuery(con, "select * from dbt.mart_nsclc_cohort")
+dbDisconnect(con)
+mart <- mart |> mutate(stage = factor(stage, levels = STAGES), followup_months = as.numeric(followup_months), event = as.integer(event))
+cohorts <- list(main = mart, sensitivity = filter(mart, dx_2010_2015))
+```
+
+## Synthea: RMST from the Kaplan-Meier fit
+
+The `stopifnot` inside checks the library's RMST against the area computed by hand from the KM step function in every stratum.
+
+```{r}
+syn <- bind_rows(lapply(names(cohorts), function(nm) {
+  d <- cohorts[[nm]]
+  fit <- survfit(Surv(followup_months, event) ~ stage, data = d)
+  tb <- summary(fit, rmean = TAU)$table
+  est <- tb[, grep("^[*]?rmean$", colnames(tb))]; se <- tb[, grep("se\\(rmean\\)", colnames(tb))]
+  # independent check: area under the KM step function, integrated by hand
+  chk <- vapply(STAGES, function(st) {
+    s <- summary(fit[paste0("stage=", st)], censored = TRUE); t <- c(0, s$time[s$time < TAU], TAU); v <- c(1, s$surv[s$time < TAU])
+    sum(diff(t) * v)
+  }, numeric(1))
+  stopifnot(all(abs(chk - est) < 1e-6))
+  tibble(cohort = nm, stage = sub("stage=", "", rownames(tb)), n = tb[, "records"], synthea_rmst = est, se = se,
+         lcl = pmax(est - 1.96 * se, 0), ucl = pmin(est + 1.96 * se, TAU))
+}))
+```
+
+## SEER: area under the observed-survival curve
+
+Requires the local SEER*Stat export described above. Only the `Observed Survival (Cum)` column is used.
+
+```{r, eval = has_seer_export}
+f <- "seer/nsclc_survival_by_stage_2010-2015.csv"
+if (!file.exists(f)) stop("The local SEER*Stat monthly export ", f, " is needed (it is not in the repository).")
+raw <- read_lines(f)
+starts <- which(str_starts(raw, '"Page type"'))
+life <- read_csv(I(raw[starts[2]:length(raw)]), show_col_types = FALSE) |>
+  rename(stage_code = 2, month = Interval, surv = `Observed Survival (Cum)`) |>
+  mutate(stage = c("0" = "I", "1" = "II", "2" = "III", "3" = "IV", "4" = "Unknown")[as.character(stage_code)],
+         surv = parse_number(as.character(surv)) / 100) |>
+  filter(stage %in% STAGES, month <= TAU) |> select(stage, month, surv)
+seer <- bind_rows(lapply(STAGES, function(st) {
+  s <- life |> filter(stage == st) |> arrange(month)
+  stopifnot(identical(as.integer(s$month), 1:TAU))
+  s_all <- c(1, s$surv)                                   # survival at months 0, 1, ..., 60
+  tibble(stage = st, seer_rmst = sum((head(s_all, -1) + tail(s_all, -1)) / 2))   # trapezoid over 60 one-month intervals
+}))
+```
+
+## Comparison table
+
+RMST in months for both sources and the difference (Synthea minus SEER). Stage I is close (about 42.9 vs 43.5 months) even though the curves have very different shapes.
+
+```{r, eval = has_seer_export}
+out <- syn |> left_join(seer, by = "stage") |>
+  mutate(stage = factor(stage, levels = STAGES), difference_months = synthea_rmst - seer_rmst,
+         synthea_rmst_ci = sprintf("%.1f (%.1f-%.1f)", synthea_rmst, lcl, ucl)) |>
+  arrange(factor(cohort, levels = c("main", "sensitivity")), stage) |>
+  transmute(cohort, stage, synthea_n = n, synthea_rmst_months = round(synthea_rmst, 2), synthea_ci_lo = round(lcl, 2), synthea_ci_hi = round(ucl, 2),
+            synthea_rmst_ci, seer_rmst_months = round(seer_rmst, 2), difference_months = round(difference_months, 2))
+write_csv(out, "results/rmst_synthea_vs_seer.csv")
+cat(sprintf("RMST to %d months (months). Synthea: Kaplan-Meier, normal 95%% CI. SEER: area under the monthly observed-survival curve (trapezoid). difference = Synthea - SEER.\n\n", TAU))
+print(as.data.frame(out |> select(cohort, stage, synthea_n, synthea_rmst_ci, seer_rmst_months, difference_months)), row.names = FALSE)
+cat("\nCheck: the Synthea RMST equals the hand-integrated KM area in every stratum (asserted in the script).\n")
+```
+
+## Session information
+
+The packages and versions this notebook ran with.
+
+```{r sessioninfo}
+sessionInfo()
+```

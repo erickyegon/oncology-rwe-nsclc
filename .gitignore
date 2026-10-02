@@ -119,3 +119,5 @@ errorReport*.txt
 *.lnk
 report/_tmp/
 report/one_page_summary.pdf
+notebooks/*.html
+notebooks/*_files/

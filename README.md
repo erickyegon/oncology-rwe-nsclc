@@ -142,6 +142,8 @@ Study complete: report and one-page summary published. See [`PLAN.md`](PLAN.md).
 ## Running the code
 Run everything from the repository root.
 
+**Prefer notebooks?** The R steps are also available as step-by-step R Markdown notebooks in [`notebooks/`](notebooks/) (start with `00_start_here.Rmd`). They contain the same code as the scripts, with explanations; open `oncology-rwe-nsclc.Rproj` in RStudio and knit them.
+
 **Prerequisites**
 - Java 17+ (JDK) and the Synthea jar, `synthea-with-dependencies.jar`, from the [Synthea releases](https://github.com/synthetichealth/synthea/releases) (this project used the `master-branch-latest` build of 2026-08-18)
 - PostgreSQL 17

@@ -1,0 +1,83 @@
+---
+title: "Start here: how this project fits together"
+subtitle: "Oncology RWE: NSCLC overall survival, synthetic EHR (Synthea) vs SEER"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include = FALSE}
+# The notebooks live in notebooks/, the project files one level up. This makes every relative path work as in the .R scripts.
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, comment = "#>")
+```
+
+## The question
+
+**How realistic is synthetic oncology EHR data for real-world evidence work?** The project builds a lung cancer (NSCLC) survival analysis on synthetic patient records
+and compares it with the SEER cancer registry.
+
+```
+Synthea  ->  OMOP CDM 5.4  ->  PostgreSQL  ->  dbt  ->  R survival analysis  ->  SEER benchmark
+(generate)   (ETL-Synthea)     (database)      (cohort,   (Kaplan-Meier, Cox,    (public aggregates)
+                                                tests)     RMST, reweighting)
+```
+
+The full write-up is `report/report.qmd` (published at https://erickyegon.github.io/oncology-rwe-nsclc/report.html). These notebooks walk through the **R part** of
+the project, one step at a time.
+
+## The notebooks, in order
+
+| # | Notebook | What it does | Needs the database? | Writes files? |
+|---|---|---|---|---|
+| 1 | `01_etl_create_tables.Rmd` | Creates the empty CDM and Synthea tables | Yes | Database only. **Switched off by default** |
+| 2 | `02_etl_synthea_to_omop.Rmd` | Maps Synthea to OMOP CDM 5.4 in stages | Yes | Database only. **Switched off by default** |
+| 3 | `03_km_synthea_vs_seer.Rmd` | Kaplan-Meier survival by stage vs SEER; the main figure | Yes | `results/km_*.csv`, `figures/km_synthea_vs_seer.png` |
+| 4 | `04_rmst.Rmd` | Restricted mean survival time to 60 months | Yes, plus a local SEER file | `results/rmst_synthea_vs_seer.csv` |
+| 5 | `05_cox_os.Rmd` | Cox model and the proportional-hazards test | Yes | `results/cox_os_*.csv`, `figures/cox_schoenfeld_*.png` |
+| 6 | `06_age_sex_reweighting.Rmd` | Demographics vs SEER and the reweighting sensitivity analysis | Yes, plus a local SEER file | `seer/..._summary.csv`, `results/demographics_*.csv`, `results/km_*_reweighted.csv` |
+| 7 | `07_treatment_patterns.Rmd` | What treatment patients received | Yes | Nothing |
+| 8 | `08_report_inputs.Rmd` | The aggregate tables the report reads | Yes | Several `results/*.csv` |
+
+Notebooks 3 to 8 are the analysis. Notebooks 1 and 2 are the database build and are off by default, because they change the database.
+The upstream steps are not in R: Synthea generation (`synthea/run_generate.ps1`), the loads (`etl/*.sh`) and the dbt models (`dbt/`).
+
+## How to run a notebook
+
+1. In RStudio, open the project file `oncology-rwe-nsclc.Rproj` in the repository root.
+2. Open a notebook from the `notebooks/` folder.
+3. Either **Knit** it (builds an HTML page next to it) or run the chunks one at a time with the green arrow, top to bottom.
+
+Every notebook starts by pointing R at the repository root, so you do not need to change the working directory.
+
+## Check your setup
+
+Packages used by the analysis notebooks:
+
+```{r packages}
+pkgs <- c("DBI", "RPostgres", "survival", "dplyr", "tidyr", "readr", "stringr", "ggplot2", "scales", "jsonlite", "knitr")
+data.frame(package = pkgs, installed = pkgs %in% rownames(installed.packages()))
+```
+
+The database connection settings come from `.Renviron` in the repository root (never committed; `.Renviron.example` shows the names). This reads only:
+
+```{r db-check}
+if (!nzchar(Sys.getenv("PG_HOST"))) readRenviron(".Renviron")
+con <- DBI::dbConnect(RPostgres::Postgres(), host = Sys.getenv("PG_HOST"), port = as.integer(Sys.getenv("PG_PORT")),
+                      dbname = Sys.getenv("PG_DB"), user = Sys.getenv("PG_USER"), password = Sys.getenv("PG_PASSWORD"))
+DBI::dbGetQuery(con, "select stage, count(*) as n from dbt.mart_nsclc_cohort group by 1 order by 1")
+DBI::dbDisconnect(con)
+```
+
+If this prints four stages (I to IV) with 292, 109, 261 and 685 patients, the database, the dbt build and your settings are all in place.
+
+## Two files that are on your machine only
+
+SEER's data use agreement does not allow publishing small monthly counts, so two SEER*Stat exports are **not in the repository**:
+`seer/nsclc_survival_by_stage_2010-2015.csv` and `seer/nsclc_age_sex_by_stage_2010-2015.csv`. Notebooks 4 and 6 need them and skip their SEER steps with a note if they
+are missing. Everything else uses only committed aggregate files.
+
+## Data statement
+
+Synthetic patient-level data (Synthea) and public SEER aggregates. This is not Flatiron data and not clinical evidence: it is a methods demonstration.

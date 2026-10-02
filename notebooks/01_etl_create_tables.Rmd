@@ -1,0 +1,41 @@
+---
+title: "ETL step 1: create the CDM and Synthea tables"
+subtitle: "Notebook 1. Source script: etl/01_load_vocab.R"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include = FALSE}
+# The notebook lives in notebooks/, the project files live one level up. Pointing knitr at the repository root
+# means every relative path below (".Renviron", "results/", "seer/", "figures/") works exactly as in the .R scripts.
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, comment = "#>")
+run_etl <- FALSE   # TRUE = actually (re)create the database tables. Leave FALSE to just read the notebook.
+```
+
+## What this notebook does
+
+Creates the empty OMOP CDM 5.4 tables (schema `cdm`) and the Synthea native tables (schema `native`) in PostgreSQL, using ETLSyntheaBuilder. Optionally loads the Athena
+vocabularies from CSV. The vocabulary load is slow and memory-hungry in R, so the project loads them with `etl/01b_load_vocab_copy.sh` instead, and this step is mainly for
+table creation.
+
+**These cells are switched off by default** (`run_etl <- FALSE` in the setup chunk), because they change the database. Run them only when you really want to (re)create the tables.
+To run: set `run_etl <- TRUE`, make sure `.Renviron` has the `PG_*`, `JDBC_DIR` and (optional) `VOCAB_DIR` settings, and run the chunks in order.
+
+The connection settings live in `etl/00_connect.R`, which this notebook sources.
+
+## Connect and create the tables
+
+`source()` loads the shared connection details (`cd`, schema names, versions). The two `Create...Tables` calls build the empty schemas. Set `LOAD_VOCAB_IN_R=1` in `.Renviron` to also load vocabularies from `VOCAB_DIR`.
+
+```{r, eval = run_etl}
+source("etl/00_connect.R")
+library(ETLSyntheaBuilder)
+CreateCDMTables(cd, cdm_schema, cdm_version)
+CreateSyntheaTables(cd, synthea_schema, synthea_version)
+if (identical(Sys.getenv("LOAD_VOCAB_IN_R"), "1")) LoadVocabFromCsv(cd, cdm_schema, Sys.getenv("VOCAB_DIR", "vocab"))
+cat("TABLES CREATED\n")
+```
