@@ -123,7 +123,7 @@ It does **not** cover third-party data or content:
 - **Synthea** is open source under its own license; the generated synthetic data are not committed (only generation settings and the edited module files).
 
 ## Status
-Synthea cohort generated and stage mix verified against SEER; OMOP load in progress. Next: dbt cohort models, then survival analysis. See [`PLAN.md`](PLAN.md).
+Synthea cohort generated and stage mix verified against SEER; OMOP load complete and verified against the source CSVs. Next: dbt cohort models, then survival analysis. See [`PLAN.md`](PLAN.md).
 
 ## Running the code
 Run everything from the repository root.
