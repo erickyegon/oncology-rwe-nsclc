@@ -1,6 +1,10 @@
 # Oncology RWE: NSCLC overall survival by stage and first-line treatment
 
-**How realistic is synthetic oncology EHR data?** This project builds an NSCLC survival pipeline on synthetic EHR data (Synthea → OMOP CDM → dbt → R) and benchmarks it against 172,582 real U.S. patients from SEER, including a documented bug that made half of all synthetic lung cancers stage I.
+**How realistic is synthetic oncology EHR data?** This project builds an NSCLC survival pipeline on synthetic EHR data (Synthea → OMOP CDM → dbt → R) and benchmarks it against 172,582 real U.S. patients from SEER, including a documented bug that made half of all synthetic lung cancers stage I. Synthea ranks the stages correctly, and its median survival for stage III nearly matches SEER (13 vs 14 months), but the shape of survival is wrong. Nobody in the synthetic cohort dies in the first months after diagnosis, and nobody with stage II–IV disease is alive after 28 months. Among 172,582 real SEER patients, 33%, 17% and 4% of stage II, III and IV patients are alive at 5 years, and 5-year survival for stage I is 53%, against 18% in Synthea. Medians alone would have passed this data as realistic; the full curves show it can test a pipeline but not stand in for real-world outcomes.
+
+![Kaplan–Meier survival by stage, Synthea vs SEER](figures/km_synthea_vs_seer.png)
+
+*Synthea: staged NSCLC, age ≥50, n = 1,347. SEER 17: NSCLC diagnosed 2010–2015, age 50+, n = 172,582. Full table: results/km_synthea_vs_seer.csv.*
 
 > **Data statement:** This project is built on **synthetic** patient-level EHR data (Synthea) and public cancer registry aggregates (SEER). It is structured to mirror commercial oncology EHR datasets. It is **not** Flatiron data. Synthea outcomes are simulated, so estimates are a methods demonstration, not clinical evidence.
 
@@ -125,7 +129,7 @@ It does **not** cover third-party data or content:
 - **Synthea** is open source under its own license; the generated synthetic data are not committed (only generation settings and the edited module files).
 
 ## Status
-OMOP load and dbt cohort complete (n = 1,347, all tests pass). Next: Kaplan–Meier survival by stage, Synthea vs SEER.
+Kaplan–Meier comparison with SEER complete. Next: SEER age and sex by stage pull, OHDSI Data Quality Dashboard, lines of therapy.
 
 ## Running the code
 Run everything from the repository root.
