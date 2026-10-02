@@ -1,0 +1,18 @@
+# Copy to .Renviron (gitignored) in the repository root and fill in. Run all scripts from the repo root.
+# PostgreSQL connection (etl/setup_postgres.ps1 creates the database and writes the PG_* lines for you)
+PG_HOST=localhost
+PG_PORT=5432
+PG_DB=omop
+PG_USER=omop_user
+PG_PASSWORD=change-me
+# JDK 17+ for DatabaseConnector (rJava) and Synthea
+JAVA_HOME=C:/path/to/jdk-17
+# Where the PostgreSQL JDBC driver is stored (downloaded automatically if empty)
+JDBC_DIR=jdbc
+# Athena vocabulary download, unpacked (CONCEPT.csv etc.)
+VOCAB_DIR=vocab
+# Synthea
+SYNTHEA_JAR=synthea/synthea-with-dependencies.jar
+SYNTHEA_OUT=synthea/output
+# Optional: full path to psql if it is not on PATH
+PSQL_BIN=

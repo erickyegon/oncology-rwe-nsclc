@@ -1,0 +1,111 @@
+# ---- Synthea generated data and run artifacts (only settings, modules and the evidence summary are tracked)
+synthea/output*/
+synthea/*/csv/
+synthea/*/fhir/
+synthea/*.jar
+synthea/evidence_run*/
+output*/
+evidence_run*/
+*.jar
+synthea-with-dependencies*
+
+# ---- OMOP vocabularies from Athena (separate licences/terms; never redistribute)
+vocab/
+vocabulary_download*
+vocabulary/
+athena/
+CONCEPT*.csv
+CONCEPT*.zip
+DRUG_STRENGTH*.csv
+DOMAIN*.csv
+RELATIONSHIP*.csv
+VOCABULARY*.csv
+PACK_CONTENT*.csv
+cpt4.jar
+
+# ---- SEER: record-level data and SEER*Stat session/matrix files must never be committed.
+# Only the aggregate files explicitly allowed below are tracked (SEER Research Data Use Agreement).
+seer/*
+!seer/README.md
+!seer/nsclc_stage_mix_2010-2015.csv
+*.ssm
+*.sfm
+*.sas.sf
+*.sm
+*.sbn
+*.dic
+*.ses
+
+# ---- Credentials, environment and connection files
+.env
+.env.*
+*.env
+.Renviron
+.Rprofile
+profiles.yml
+.pgpass
+pgpass.conf
+*.pem
+*.key
+*.pfx
+*.p12
+secrets*
+credentials*
+*password*
+service-account*.json
+
+# ---- dbt
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+target/
+logs/
+dbt_packages/
+.user.yml
+
+# ---- Large/raw data and database dumps
+data/
+*.dump
+*.backup
+*.sql.gz
+*.parquet
+*.feather
+*.zip
+*.7z
+*.tar.gz
+
+# ---- Logs
+*.log
+*.err
+
+# ---- R
+.Rproj.user/
+.Rhistory
+.RData
+.Rdata
+.Ruserdata
+*.rds
+*_cache/
+*_files/
+renv/library/
+renv/staging/
+.quarto/
+report/*.html
+!report/index.html
+
+# ---- Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+
+# ---- OS / editor / sync
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
+.idea/
+.vscode/

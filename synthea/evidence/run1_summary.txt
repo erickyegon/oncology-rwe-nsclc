@@ -1,0 +1,59 @@
+filtered patients: 1869; NSCLC: 1586; SCLC (not NSCLC): 283
+NSCLC with a TNM stage code: 1584; without: 2
+
+=== 1. Stage mix vs SEER input, all NSCLC
+
+all staged NSCLC  (n=1584)
+  stage      n       %          95% CI   SEER %  scaled input %
+  1        816   51.5%       49.1-54.0    20.0%          20.02%
+  2         92    5.8%         4.8-7.1     8.4%           8.41%
+  3        183   11.6%       10.1-13.2    19.8%          19.82%
+  4        493   31.1%       28.9-33.4    51.7%          51.75%
+  chi-square vs input = 982.43 (df 3), p = 0.000
+
+=== 1a. Restricted to age >= 50 at diagnosis (SEER cohort definition)
+
+age >= 50 at diagnosis  (n=1306)
+  stage      n       %          95% CI   SEER %  scaled input %
+  1        759   58.1%       55.4-60.8    20.0%          20.02%
+  2         70    5.4%         4.3-6.7     8.4%           8.41%
+  3        129    9.9%        8.4-11.6    19.8%          19.82%
+  4        348   26.6%       24.3-29.1    51.7%          51.75%
+  chi-square vs input = 1185.40 (df 3), p = 0.000
+  (excluded age < 50: 278)
+
+=== 1d. Stage II vs 8.4% input
+  all      stage II = 92/1584 = 5.8% (95% CI 4.8-7.1); input 8.4% (scaled 8.41%); z = -3.73; BELOW input
+  age>=50  stage II = 70/1306 = 5.4% (95% CI 4.3-6.7); input 8.4% (scaled 8.41%); z = -3.97; BELOW input
+
+=== 1b. Diagnosis year
+  5-year bins: 1980-1984: 9, 1985-1989: 68, 1990-1994: 109, 1995-1999: 124, 2000-2004: 227, 2005-2009: 254, 2010-2014: 287, 2015-2019: 224, 2020-2024: 221, 2025-2029: 61
+  earliest 1982, latest 2026
+  diagnosed 2010-2015: 325 (20.5%)
+
+stage mix, diagnosed 2010-2015  (n=325)
+  stage      n       %          95% CI   SEER %  scaled input %
+  1        199   61.2%       55.8-66.4    20.0%          20.02%
+  2         15    4.6%         2.8-7.5     8.4%           8.41%
+  3         31    9.5%        6.8-13.2    19.8%          19.82%
+  4         80   24.6%       20.2-29.6    51.7%          51.75%
+  chi-square vs input = 344.84 (df 3), p = 0.000
+  stage mix by 10-year era:
+    1980s n=  77: 1 18% / 2 9% / 3 16% / 4 57%
+    1990s n= 233: 1 21% / 2 6% / 3 19% / 4 54%
+    2000s n= 481: 1 49% / 2 7% / 3 14% / 4 30%
+    2010s n= 511: 1 65% / 2 5% / 3 8% / 4 23%
+    2020s n= 282: 1 66% / 2 5% / 3 7% / 4 22%
+
+=== 1c. Sex split and age at diagnosis by stage
+  overall: M 1183 (74.7%), F 401 (25.3%)
+  stage     n     M     F     %F   age mean (SD)    median [IQR]    range  deaths  med obs mo  med f/u rKM
+  1       816   685   131    16%     66.9 (9.3)     67.4 [63-73]   46-85     722        42.3           NR
+  2        92    51    41    45%     54.8 (5.6)     55.0 [50-59]   46-66      87        21.9           NR
+  3       183   117    66    36%     54.6 (5.8)     54.6 [49-59]   45-67     182        13.2           NR
+  4       493   330   163    33%     54.3 (5.8)     53.5 [49-59]   45-66     488         8.0           NR
+  all: age mean 60.8 (SD 10.0), median 60.3 [52-67], range 45-85; deaths 1479/1584
+
+  stage mix by sex:
+    F n= 401: 1 32.7% / 2 10.2% / 3 16.5% / 4 40.6%
+    M n=1183: 1 57.9% / 2 4.3% / 3 9.9% / 4 27.9%
