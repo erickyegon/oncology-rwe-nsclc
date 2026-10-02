@@ -2,7 +2,7 @@
 # Prompts for the postgres superuser password (never stored). Writes the new role's
 # generated password to the gitignored .Renviron at the repo root (other lines in it are preserved).
 $ErrorActionPreference = 'Stop'
-$psql = if ($env:PSQL_BIN) { $env:PSQL_BIN } elseif (Get-Command psql -ErrorAction SilentlyContinue) { (Get-Command psql).Source } else { 'C:\Program Files\PostgreSQLin\psql.exe' }
+$psql = if ($env:PSQL_BIN) { $env:PSQL_BIN } elseif (Get-Command psql -ErrorAction SilentlyContinue) { (Get-Command psql).Source } else { 'C:\Program Files\PostgreSQL\17\bin\psql.exe' }
 $root = Split-Path $PSScriptRoot -Parent
 
 $sec = Read-Host 'postgres superuser password' -AsSecureString
