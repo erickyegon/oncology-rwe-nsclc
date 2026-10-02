@@ -29,6 +29,7 @@ seer/*
 !seer/README.md
 !seer/nsclc_stage_mix_2010-2015.csv
 !seer/nsclc_survival_by_stage_summary.csv
+!seer/nsclc_age_sex_by_stage_summary.csv
 *.ssm
 *.sfm
 *.sas.sf

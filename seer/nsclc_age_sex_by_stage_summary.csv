@@ -1,0 +1,76 @@
+stage,age_band,sex,n,pct_of_stage
+I,50-64,both,8299,25.86
+I,50-64,male,3860,12.03
+I,50-64,female,4439,13.83
+I,65-74,both,12209,38.04
+I,65-74,male,5806,18.09
+I,65-74,female,6403,19.95
+I,75-84,both,9247,28.81
+I,75-84,male,4146,12.92
+I,75-84,female,5101,15.89
+I,85+,both,2338,7.29
+I,85+,male,956,2.98
+I,85+,female,1382,4.31
+I,All 50+,both,32093,100
+I,All 50+,male,14768,46.02
+I,All 50+,female,17325,53.98
+II,50-64,both,3715,27.57
+II,50-64,male,2090,15.51
+II,50-64,female,1625,12.06
+II,65-74,both,4916,36.48
+II,65-74,male,2789,20.69
+II,65-74,female,2127,15.78
+II,75-84,both,3803,28.22
+II,75-84,male,1988,14.75
+II,75-84,female,1815,13.47
+II,85+,both,1043,7.74
+II,85+,male,502,3.72
+II,85+,female,541,4.01
+II,All 50+,both,13477,100
+II,All 50+,male,7369,54.68
+II,All 50+,female,6108,45.32
+III,50-64,both,10361,32.6
+III,50-64,male,6137,19.31
+III,50-64,female,4224,13.29
+III,65-74,both,11215,35.28
+III,65-74,male,6298,19.81
+III,65-74,female,4917,15.47
+III,75-84,both,7981,25.11
+III,75-84,male,4184,13.16
+III,75-84,female,3797,11.95
+III,85+,both,2228,7.01
+III,85+,male,1075,3.38
+III,85+,female,1153,3.63
+III,All 50+,both,31785,100
+III,All 50+,male,17694,55.67
+III,All 50+,female,14091,44.33
+IV,50-64,both,27919,33.68
+IV,50-64,male,16300,19.66
+IV,50-64,female,11619,14.02
+IV,65-74,both,27189,32.8
+IV,65-74,male,15184,18.32
+IV,65-74,female,12005,14.48
+IV,75-84,both,20387,24.59
+IV,75-84,male,10613,12.8
+IV,75-84,female,9774,11.79
+IV,85+,both,7408,8.94
+IV,85+,male,3320,4
+IV,85+,female,4088,4.93
+IV,All 50+,both,82903,100
+IV,All 50+,male,45417,54.78
+IV,All 50+,female,37486,45.22
+Unknown,50-64,both,2193,17.79
+Unknown,50-64,male,1354,10.99
+Unknown,50-64,female,839,6.81
+Unknown,65-74,both,3339,27.09
+Unknown,65-74,male,1886,15.3
+Unknown,65-74,female,1453,11.79
+Unknown,75-84,both,3965,32.17
+Unknown,75-84,male,1938,15.73
+Unknown,75-84,female,2027,16.45
+Unknown,85+,both,2827,22.94
+Unknown,85+,male,1171,9.5
+Unknown,85+,female,1656,13.44
+Unknown,All 50+,both,12324,100
+Unknown,All 50+,male,6349,51.52
+Unknown,All 50+,female,5975,48.48
