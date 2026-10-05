@@ -62,10 +62,11 @@ ul.plain li{margin:0 0 8px}
   .stats,.two{grid-template-columns:minmax(0,1fr)}
   .lede{font-size:18px}
 }
+.strip .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.proj{display:block;min-height:44px;padding:14px;border:1.5px solid var(--line);border-radius:8px;text-decoration:none;color:var(--ink)}.proj strong{display:block;color:var(--seer)}.proj:hover{border-color:var(--ink)}.proj.current{border-color:var(--seer)}
 </style>
 </head>
 <body>
-<main class="wrap">
+<main class="wrap" id="top">
 
 <p class="kicker">Oncology real-world evidence · Synthetic vs real data</p>
 <h1>The medians matched. The survival curves didn’t.</h1>
@@ -135,6 +136,11 @@ ul.plain li{margin:0 0 8px}
   <p>All data are synthetic or public SEER aggregates; no real patient-level data and no Flatiron data are used. This is a methods demonstration, not clinical evidence.</p>
   <p>I used AI assistants as tools for code and documentation; the study design, methods and interpretation are my own, and I verified all results.</p>
 </div>
+
+<section class="strip" aria-label="Portfolio"><h2>Two projects, one portfolio</h2>
+  <div class="two"><a class="proj current" href="#top" aria-current="page"><strong>Evidence</strong><span>Real-world oncology data (NSCLC): survival and outcomes</span></a>
+  <a class="proj" href="https://erickyegon.github.io/incretin-access-value/"><strong>Access &amp; Value</strong><span>Incretin drugs in Medicaid: coverage, prescribers, budget impact</span></a></div>
+</section>
 
 </main>
 </body>
