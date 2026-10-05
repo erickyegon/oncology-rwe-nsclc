@@ -14,6 +14,10 @@ One-page summary: [docs/one_page_summary.pdf](docs/one_page_summary.pdf)
 ## Research question
 Among patients diagnosed with non-small cell lung cancer (NSCLC), how does real-world overall survival differ by stage at diagnosis and by first-line treatment type?
 
+## Companion project
+
+[**nsclc-rwd-truth-recovery**](https://github.com/erickyegon/nsclc-rwd-truth-recovery) is a Python companion that asks the complementary question. This repo tests how realistic off-the-shelf synthetic EHR data is by benchmarking Synthea against SEER. The companion uses a custom generator with a known, recorded truth to check that the line-of-therapy, IPTW and immortal-time-bias methods recover the right answer (10-seed Monte-Carlo bias and coverage).
+
 ## Design
 Retrospective cohort. Index date = first recorded lung cancer diagnosis. Adults with at least one encounter after index.
 Exposures: stage; first-line treatment (chemotherapy alone, chemo + radiation, none recorded).
