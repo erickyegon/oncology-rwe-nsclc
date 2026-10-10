@@ -169,3 +169,7 @@ Run everything from the repository root.
 9. Create the dbt profile: copy `dbt/profiles.example.yml` to `dbt/profiles.yml` (gitignored). It reads the `PG_*` values from the environment, so load them from `.Renviron` into your shell first.
 10. Build and test the cohort models: `dbt build --project-dir dbt --profiles-dir dbt`.
 11. Compare with SEER: `Rscript analysis/km_synthea_vs_seer.R` (writes `results/` and `figures/`).
+
+---
+
+Author: Erick Kiprotich Yegon, epidemiologist and data scientist (real-world evidence, HEOR, causal inference) · Portfolio: https://erickyegon.github.io · LinkedIn: https://linkedin.com/in/erickyegon
