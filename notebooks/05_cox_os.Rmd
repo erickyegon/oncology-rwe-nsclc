@@ -22,7 +22,7 @@ Fits `coxph(Surv(followup_months, event) ~ stage + age_at_dx + sex)` on the main
 without patients flagged `prior_other_cancer` as a sensitivity analysis. First-line treatment is **not** modelled: 1,346 of 1,347 patients received the same treatment
 (see `docs/analysis_decisions.md`), so there is no treatment contrast to estimate.
 
-**Reading the results.** The stage hazard ratios (about 22, 290 and 9,490 against stage I) reflect near-complete separation of survival times by stage, because the generator scripts
+**Reading the results.** The stage hazard ratios (about 22, 290 and 9,490 against stage I) are scripted, not discovered: they reflect near-complete separation of survival times by stage, because the generator scripts
 death windows by stage. They are not clinical effect sizes. The proportional-hazards test rejects, as it should. Age and sex have essentially no effect in the synthetic data.
 
 **Outputs:** `results/cox_os_hazard_ratios.csv`, `results/cox_os_ph_tests.csv`, `figures/cox_schoenfeld_residuals.png`, `figures/cox_schoenfeld_residuals_excl_prior_cancer.png`.
