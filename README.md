@@ -12,7 +12,13 @@ One-page summary: [docs/one_page_summary.pdf](docs/one_page_summary.pdf)
 > **Data statement:** This project is built on **synthetic** patient-level EHR data (Synthea) and public cancer registry aggregates (SEER). It is structured to mirror commercial oncology EHR datasets. It is **not** Flatiron data. Synthea outcomes are simulated, so estimates are a methods demonstration, not clinical evidence.
 
 ## Research question
-Among patients diagnosed with non-small cell lung cancer (NSCLC), how does real-world overall survival differ by stage at diagnosis and by first-line treatment type?
+**Descriptive and benchmarking, not causal.** Among patients diagnosed with non-small cell lung cancer (NSCLC) in synthetic EHR data, how does overall survival differ by stage at diagnosis, and how closely do those survival curves match observed survival in SEER?
+
+The study originally also asked how survival differs by first-line treatment. That question could not be answered: 1,346 of 1,347 main-cohort patients received the same first line, so there is no treatment contrast and IPTW is not identifiable. No treatment-effect model is fitted (report section "Why inverse probability of treatment weighting (IPTW) is not identifiable"; [analysis decisions](docs/analysis_decisions.md)). For methods that do estimate treatment effects and are checked against a known truth, see the companion project below.
+
+## Reading the stage hazard ratios: scripted, not discovered
+
+The Cox hazard ratios for stage (about 22 for stage II, 290 for III and 9,488 for IV against stage I; `results/cox_os_hazard_ratios.csv`) are **scripted, not discovered**. Synthea draws each stage's time of death from a window set in the module, so the stages' survival times barely overlap and the partial likelihood is near separation. The numbers are extreme, the proportional-hazards test rejects, and they are not clinical effect sizes or evidence about real NSCLC. Age and sex show essentially no effect for the same reason (simulator survival depends on stage alone). Details: [analysis decisions](docs/analysis_decisions.md#interpreting-the-cox-model).
 
 ## Companion project
 
@@ -20,16 +26,17 @@ Among patients diagnosed with non-small cell lung cancer (NSCLC), how does real-
 
 ## Design
 Retrospective cohort. Index date = first recorded lung cancer diagnosis. Adults with at least one encounter after index.
-Exposures: stage; first-line treatment (chemotherapy alone, chemo + radiation, none recorded).
-Outcomes: overall survival (censored at last recorded activity); time to next treatment.
-Covariates: age, sex, smoking history, comorbidity count, diagnosis year.
+Exposure of interest: stage at diagnosis (a prognostic factor, not a treatment). First-line treatment was derived and described but is not analysed as an exposure (see above).
+Outcome: overall survival from the index date (survivors censored at end of observation, with a 120-month cap). Time to next treatment is derived in the mart but is not reported as a study outcome.
+Covariates in the Cox model: age at diagnosis and sex. Prior other cancer is a sensitivity flag.
+Analyses: Kaplan-Meier and restricted mean survival time by stage against SEER; Cox model; SEER age and sex reweighting; descriptive treatment patterns.
 
 ## Pipeline
 1. Synthea -> OMOP CDM 5.4 (ETL-Synthea) -> PostgreSQL; OHDSI Data Quality Dashboard
 2. dbt models (`stg_`, `int_`, `mart_nsclc_cohort`) + tests
 3. Rule-based lines of therapy
 4. Endpoints
-5. KM, Cox, IPTW, sensitivity analyses (R)
+5. KM, RMST, Cox, age/sex reweighting and treatment-pattern summaries (R). No IPTW or treatment-effect model (not identifiable, see above)
 6. SEER benchmark
 
 ## Data note: Synthea stage assignment (finding and patch)

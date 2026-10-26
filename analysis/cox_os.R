@@ -52,6 +52,7 @@ ph_table <- function(m, label) {                      # proportional-hazards tes
 }
 ph <- rbind(ph_table(main, "main"), ph_table(sens, "excluding prior_other_cancer"))
 write.csv(transform(ph, chisq = signif(chisq, 4), p = signif(p, 3)), "results/cox_os_ph_tests.csv", row.names = FALSE)
+cat("\nCAUTION: the stage hazard ratios are scripted, not discovered. Synthea scripts time of death by stage, so survival times are nearly separated by stage and the ratios are numerically extreme. They are not clinical effect sizes.\n")
 cat("\n==== HAZARD RATIOS (95% CI); reference: stage I, female ====\n")
 print(transform(hr, hr = signif(hr, 4), lcl = signif(lcl, 4), ucl = signif(ucl, 4), p = signif(p, 3)), row.names = FALSE)
 cat(sprintf("\nConcordance: main %.3f (se %.3f); excluding prior_other_cancer %.3f (se %.3f)\n", concordance(main$fit)$concordance, sqrt(concordance(main$fit)$var),
